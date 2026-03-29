@@ -1,0 +1,619 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DC Capex Inflection Monitor</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600;700&family=IBM+Plex+Sans:wght@300;400;500&display=swap');
+
+  :root {
+    --bg:       #0b0e14;
+    --surface:  #111520;
+    --border:   #1e2535;
+    --border-hi:#2a3348;
+    --g:  #00d68f;
+    --r:  #ff4d6a;
+    --y:  #f5c518;
+    --b:  #4d9fff;
+    --o:  #ff9a3c;
+    --v:  #b57bff;
+    --muted: #4a5568;
+    --dim:   #6b7a96;
+    --text:  #c8d0e0;
+    --hi:    #e8edf5;
+    --mono: 'IBM Plex Mono', monospace;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 12px;
+    padding: 28px 32px;
+    max-width: 1140px;
+    margin: 0 auto;
+  }
+
+  /* ── HEADER ─────────────────────────────────────────────────────────── */
+  .hdr {
+    display: flex; justify-content: space-between; align-items: flex-end;
+    border-bottom: 1px solid var(--border-hi);
+    padding-bottom: 12px; margin-bottom: 24px;
+  }
+  .hdr-badge {
+    display: inline-block; font-size: 8px; font-weight: 700; letter-spacing: .14em;
+    text-transform: uppercase; padding: 2px 8px;
+    border: 1px solid var(--g); color: var(--g); margin-bottom: 7px;
+  }
+  .hdr-title { font-size: 18px; font-weight: 700; color: var(--hi); letter-spacing: .06em; text-transform: uppercase; }
+  .hdr-sub   { font-size: 9px; color: var(--dim); margin-top: 5px; letter-spacing: .04em; }
+  .hdr-meta  { text-align: right; font-size: 10px; color: var(--dim); line-height: 1.8; }
+  .hdr-meta b { color: var(--g); font-weight: 500; }
+
+  /* ── HERO ROW ────────────────────────────────────────────────────────── */
+  .hero-row {
+    display: flex; align-items: stretch; gap: 14px; margin-bottom: 20px;
+  }
+  .hero-box {
+    border: 1px solid rgba(0,214,143,.30); background: var(--surface);
+    padding: 22px 28px; min-width: 172px;
+    display: flex; flex-direction: column; justify-content: center;
+    position: relative; overflow: hidden; flex-shrink: 0;
+  }
+  .hero-box::before {
+    content: ''; position: absolute; top: 0; left: 0; width: 4px; height: 100%;
+    background: var(--g);
+  }
+  .hero-label  { font-size: 8px; text-transform: uppercase; letter-spacing: .14em; color: var(--dim); margin-bottom: 8px; }
+  .hero-val    { font-size: 54px; font-weight: 700; line-height: 1; }
+  .hero-status {
+    display: inline-block; margin-top: 10px;
+    font-size: 10px; font-weight: 600; padding: 3px 10px;
+    border: 1px solid; text-transform: uppercase; letter-spacing: .1em;
+  }
+  .hero-sub    { font-size: 9px; color: var(--dim); margin-top: 8px; line-height: 1.65; }
+
+  /* ── SCORE STRIP ─────────────────────────────────────────────────────── */
+  .score-strip {
+    display: grid; grid-template-columns: repeat(5, 1fr); gap: 0;
+    border: 1px solid var(--border); flex: 1; background: var(--surface);
+  }
+  .ss-cell {
+    padding: 14px 16px; border-right: 1px solid var(--border);
+    position: relative; overflow: hidden;
+  }
+  .ss-cell:last-child { border-right: none; }
+  .ss-cell::before {
+    content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 3px;
+  }
+  .sc1::before { background: var(--b); }
+  .sc2::before { background: var(--v); }
+  .sc3::before { background: var(--g); }
+  .sc4::before { background: var(--o); }
+  .sc5::before { background: var(--r); }
+  .ss-num  { font-size: 8px; font-weight: 700; letter-spacing: .12em; margin-bottom: 2px; }
+  .sc1 .ss-num { color: var(--b); } .sc2 .ss-num { color: var(--v); }
+  .sc3 .ss-num { color: var(--g); } .sc4 .ss-num { color: var(--o); }
+  .sc5 .ss-num { color: var(--r); }
+  .ss-name  { font-size: 8px; color: var(--dim); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 10px; line-height: 1.35; }
+  .ss-score { font-size: 26px; font-weight: 700; line-height: 1; }
+  .ss-badge {
+    display: inline-block; margin-top: 7px;
+    font-size: 7.5px; font-weight: 600; padding: 2px 6px; border-radius: 2px;
+    text-transform: uppercase; letter-spacing: .07em;
+  }
+
+  /* ── BADGE COLOURS ───────────────────────────────────────────────────── */
+  .bg  { background: rgba(0,214,143,.12);  color: var(--g); }
+  .br  { background: rgba(255,77,106,.12); color: var(--r); }
+  .by  { background: rgba(245,197,24,.10); color: var(--y); }
+  .bo  { background: rgba(255,154,60,.12); color: var(--o); }
+  .bb  { background: rgba(77,159,255,.12); color: var(--b); }
+  .bv  { background: rgba(181,123,255,.12); color: var(--v); }
+
+  /* ── TAKEAWAY ────────────────────────────────────────────────────────── */
+  .tkbox {
+    border: 1px solid rgba(0,214,143,.22);
+    background: rgba(0,214,143,.03);
+    padding: 14px 20px; margin-bottom: 20px;
+    display: flex; gap: 14px; align-items: flex-start;
+  }
+  .tkbox-label { color: var(--g); font-weight: 700; font-size: 9px; text-transform: uppercase; letter-spacing: .12em; white-space: nowrap; padding-top: 1px; }
+  .tkbox-text  { font-size: 10.5px; color: var(--text); line-height: 1.65; }
+  .tkbox-text strong { color: var(--hi); font-weight: 600; }
+
+  /* ── AGGREGATE CHART PANEL ───────────────────────────────────────────── */
+  .chart-panel {
+    border: 1px solid var(--border-hi); background: var(--surface);
+    padding: 20px 24px 16px; margin-bottom: 28px;
+  }
+  .panel-hdr { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; }
+  .panel-title { font-size: 9px; text-transform: uppercase; letter-spacing: .12em; color: var(--dim); }
+  .panel-desc  { font-size: 9px; color: var(--muted); margin-top: 4px; line-height: 1.5; max-width: 720px; }
+  .chart-live  { font-size: 26px; font-weight: 700; flex-shrink: 0; }
+
+  /* ── SECTION DIVIDER ─────────────────────────────────────────────────── */
+  .section-divider {
+    display: flex; align-items: center; gap: 14px; margin-bottom: 18px;
+  }
+  .section-divider-label {
+    font-size: 9px; text-transform: uppercase; letter-spacing: .14em; color: var(--dim); white-space: nowrap;
+  }
+  .section-divider-line { flex: 1; height: 1px; background: var(--border); }
+
+  /* ── SUB-FACTOR GRID ─────────────────────────────────────────────────── */
+  .sub-grid {
+    display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px;
+    margin-bottom: 20px;
+  }
+  .sub-card {
+    border: 1px solid var(--border); background: var(--surface);
+    padding: 16px 16px 14px; position: relative; overflow: hidden;
+    display: flex; flex-direction: column;
+  }
+  .sub-card::before {
+    content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 3px;
+  }
+  .sf1::before { background: var(--b); }
+  .sf2::before { background: var(--v); }
+  .sf3::before { background: var(--g); }
+  .sf4::before { background: var(--o); }
+  .sf5::before { background: var(--r); }
+  .sub-num  { font-size: 8px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; margin-bottom: 2px; }
+  .sf1 .sub-num { color: var(--b); } .sf2 .sub-num { color: var(--v); }
+  .sf3 .sub-num { color: var(--g); } .sf4 .sub-num { color: var(--o); }
+  .sf5 .sub-num { color: var(--r); }
+  .sub-name  { font-size: 9px; color: var(--dim); text-transform: uppercase; letter-spacing: .07em; margin-bottom: 10px; line-height: 1.4; }
+  .sub-score { font-size: 30px; font-weight: 700; line-height: 1; }
+  .sub-badge {
+    display: inline-block; margin-top: 7px;
+    font-size: 8px; font-weight: 600; padding: 2px 7px; border-radius: 2px;
+    text-transform: uppercase; letter-spacing: .08em;
+  }
+  .sub-spark { height: 44px; margin-top: 12px; }
+  .sub-comment {
+    font-size: 9px; color: var(--text); line-height: 1.62;
+    margin-top: 12px; padding-top: 10px;
+    border-top: 1px solid var(--border); flex: 1;
+  }
+  .sub-comment strong { color: var(--hi); font-weight: 600; }
+
+  /* ── FOOTNOTE ────────────────────────────────────────────────────────── */
+  .footnote {
+    margin-top: 20px; font-size: 9px; color: var(--muted);
+    border-top: 1px solid var(--border); padding-top: 12px; line-height: 1.8;
+  }
+</style>
+</head>
+<body>
+
+<!-- ── HEADER ──────────────────────────────────────────────────────────── -->
+<div class="hdr">
+  <div>
+    <div class="hdr-badge">Composite · All Five Indicators</div>
+    <div class="hdr-title">DC Capex Inflection Monitor</div>
+    <div class="hdr-sub">Indicators #1–5 · Queue Reversal · DRAM · DC Permit · Electrical Equipment · AI Financing &nbsp;·&nbsp; 24-Month Window Apr 2024 – Mar 2026</div>
+  </div>
+  <div class="hdr-meta">
+    Generated <b>March 25, 2026</b><br>
+    Base-shifted: Apr '24 = 0<br>
+    Aggregate = simple average of 5 factors
+  </div>
+</div>
+
+<!-- ── HERO ROW ──────────────────────────────────────────────────────────── -->
+<div class="hero-row">
+  <div class="hero-box">
+    <div class="hero-label">Aggregate Index</div>
+    <div class="hero-val" id="heroVal">…</div>
+    <div class="hero-status" id="heroStatus">…</div>
+    <div class="hero-sub" id="heroSub">…</div>
+  </div>
+  <div class="score-strip">
+    <div class="ss-cell sc1">
+      <div class="ss-num">#1</div>
+      <div class="ss-name">Queue Reversal</div>
+      <div class="ss-score" id="ss1score">…</div>
+      <div class="ss-badge" id="ss1badge">…</div>
+    </div>
+    <div class="ss-cell sc2">
+      <div class="ss-num">#2</div>
+      <div class="ss-name">DRAM Index</div>
+      <div class="ss-score" id="ss2score">…</div>
+      <div class="ss-badge" id="ss2badge">…</div>
+    </div>
+    <div class="ss-cell sc3">
+      <div class="ss-num">#3</div>
+      <div class="ss-name">DC Permit &amp; Starts</div>
+      <div class="ss-score" id="ss3score">…</div>
+      <div class="ss-badge" id="ss3badge">…</div>
+    </div>
+    <div class="ss-cell sc4">
+      <div class="ss-num">#4</div>
+      <div class="ss-name">Electrical Equip.</div>
+      <div class="ss-score" id="ss4score">…</div>
+      <div class="ss-badge" id="ss4badge">…</div>
+    </div>
+    <div class="ss-cell sc5">
+      <div class="ss-num">#5</div>
+      <div class="ss-name">AI Financing</div>
+      <div class="ss-score" id="ss5score">…</div>
+      <div class="ss-badge" id="ss5badge">…</div>
+    </div>
+  </div>
+</div>
+
+<!-- ── KEY TAKEAWAY ──────────────────────────────────────────────────────── -->
+<div class="tkbox">
+  <div class="tkbox-label">Key Takeaway</div>
+  <div class="tkbox-text" id="takeaway">…</div>
+</div>
+
+<!-- ── AGGREGATE INDEX CHART ─────────────────────────────────────────────── -->
+<div class="chart-panel">
+  <div class="panel-hdr">
+    <div>
+      <div class="panel-title">Aggregate Index — 24-month history · 5 factor overlays · Base = 0 at Apr 2024</div>
+      <div class="panel-desc">Bold green line = simple average of the 5 base-shifted indicators. Dashed factor lines shown as faint colour-coded overlays. Green band = above Apr '24 baseline; red band = below. Green line shifts to orange-red when the aggregate crosses below zero.</div>
+    </div>
+    <div class="chart-live" id="chartScore">…</div>
+  </div>
+  <!-- HTML legend -->
+  <div class="chart-legend" id="chartLegend">
+    <div class="cl-item cl-composite"><span class="cl-line cl-line-bold" style="background:#00d68f"></span>Aggregate Index</div>
+    <div class="cl-item"><span class="cl-line cl-line-dash" style="background:#4d9fff"></span>#1 Queue Reversal</div>
+    <div class="cl-item"><span class="cl-line cl-line-dash" style="background:#b57bff"></span>#2 DRAM Index</div>
+    <div class="cl-item"><span class="cl-line cl-line-dash" style="background:#00d68f;opacity:.6"></span>#3 DC Permit</div>
+    <div class="cl-item"><span class="cl-line cl-line-dash" style="background:#ff9a3c"></span>#4 Elec. Equip.</div>
+    <div class="cl-item"><span class="cl-line cl-line-dash" style="background:#ff4d6a"></span>#5 AI Financing</div>
+  </div>
+  <canvas id="mainChart" height="110"></canvas>
+</div>
+
+<!-- ── SUB-FACTOR PANEL ───────────────────────────────────────────────────── -->
+<div class="section-divider">
+  <div class="section-divider-label">Sub-Factor Detail — March 2026</div>
+  <div class="section-divider-line"></div>
+</div>
+
+<div class="sub-grid">
+
+  <div class="sub-card sf1">
+    <div class="sub-num">#1</div>
+    <div class="sub-name">Queue Reversal</div>
+    <div class="sub-score" id="sf1score">…</div>
+    <div class="sub-badge" id="sf1badge">…</div>
+    <div class="sub-spark"><canvas id="spark1"></canvas></div>
+    <div class="sub-comment">
+      <strong>Net MW turned decisively negative for the third straight month</strong> — March at −696 MW is the largest single-month outflow on record. The 3-month net of −1,001 MW is the first sustained negative sequence since tracking began, with additions at their 24-month low (4,862 MW) as the hyperscaler filing pipeline thins. Avg interconnection wait time has risen to 4.3yr — structurally mismatched with 18–24mo hyperscaler build schedules — accelerating queue-bypass strategies such as BTM generation and bilateral PPAs. FERC Order 2023 process improvements won't affect actual queue throughput before late 2027.
+    </div>
+  </div>
+
+  <div class="sub-card sf2">
+    <div class="sub-num">#2</div>
+    <div class="sub-name">DRAM Index</div>
+    <div class="sub-score" id="sf2score">…</div>
+    <div class="sub-badge" id="sf2badge">…</div>
+    <div class="sub-spark"><canvas id="spark2"></canvas></div>
+    <div class="sub-comment">
+      <strong>Price is near cycle high at $46.20, but momentum flipped negative for the first time since the Oct '25 squeeze began</strong> — the −4.7% MoM print ends a five-month streak of +34–65% monthly gains. Acceleration had already turned negative in February (the 2nd derivative leading indicator), and the March print deepens it further. The grey-market TF/BBG spread (10.4%) has narrowed from its 12.0% Jan '26 peak but remains well above the 4.5% calm-market baseline. High level + negative momentum + negative acceleration is the classic potential-top configuration: one more negative month would drag the composite toward zero and confirm the inflection.
+    </div>
+  </div>
+
+  <div class="sub-card sf3">
+    <div class="sub-num">#3</div>
+    <div class="sub-name">DC Permit &amp; Starts</div>
+    <div class="sub-score" id="sf3score">…</div>
+    <div class="sub-badge" id="sf3badge">…</div>
+    <div class="sub-spark"><canvas id="spark3"></canvas></div>
+    <div class="sub-comment">
+      <strong>Deeply divergent signals — a speculative land and filing surge is masking deteriorating approval quality.</strong> Land acquisition ran at 4,812 acres in March (+31% MoM), and permit velocity hit a 24-month high at 247/mo, both driven by pre-positioning ahead of anticipated site-selection tightening. However, the approval rate fell to 61% — the weakest in the 24-month window — and regulatory friction reached a cycle peak at 9 active blocks (Dominion Energy hold Jan, PJM NJ/NYC interconnection freeze Mar, Chicago ComEd 345kV delay Nov '25). The composite sits just above zero: the filing surge is masking fundamentally deteriorating conditions on the regulatory and utility side.
+    </div>
+  </div>
+
+  <div class="sub-card sf4">
+    <div class="sub-num">#4</div>
+    <div class="sub-name">Electrical Equipment</div>
+    <div class="sub-score" id="sf4score">…</div>
+    <div class="sub-badge" id="sf4badge">…</div>
+    <div class="sub-spark"><canvas id="spark4"></canvas></div>
+    <div class="sub-comment">
+      <strong>18–24 month transformer lead times force developers to commit slots well before capex hits any filing.</strong> Order intake continues to outpace shipments for the 9th consecutive quarter — no relief visible in any near-term guidance. Combined backlog reached ~$127B (+38% YoY blended), with B2B above 1.30 across all six OEMs. Large transformer lead times breached 90 weeks (92wk domestic, 58–70wk import, up from a 24-month avg of ~54wk). Switchgear has now moved into transformer territory: MV quotes at 42–55wk, with three major DC campus orders in Q1 citing switchgear as the critical-path item for 2027 RFSDs. Price escalation is accelerating — GE Vernova and Siemens Energy disclosed 8–12% increases on new bookings; Eaton flagged 60–65% gross margins on DC-specific orders. The constraint is monetising with no sign of demand abating.
+    </div>
+  </div>
+
+  <div class="sub-card sf5">
+    <div class="sub-num">#5</div>
+    <div class="sub-name">AI Financing Stress</div>
+    <div class="sub-score" id="sf5score">…</div>
+    <div class="sub-badge" id="sf5badge">…</div>
+    <div class="sub-spark"><canvas id="spark5"></canvas></div>
+    <div class="sub-comment">
+      <strong>Near its 24-month floor — private capital is repricing AI infrastructure risk.</strong> CoreWeave OAS at 218bps (vs. 90bps baseline), AI HY/IG spread premium at 312bps, and private Series B+ velocity at 31 deals/mo are all substantially below neutral levels. This index was the earliest of the five to cross below the Apr '24 baseline (Apr '25) and has remained negative for 12 consecutive months. Persistent spread elevation combined with a collapse in round velocity signals that private capital is becoming increasingly selective on DC-intensive AI capex — a dynamic that typically precedes reported capex deceleration by 6–12 months.
+    </div>
+  </div>
+
+</div>
+
+<div class="footnote">
+  DC Capex Inflection Monitor — Aggregate Index = simple average of the five base-shifted factor indices. Each factor is computed using the same methodology as its individual monitor, base-shifted so Apr 2024 = 0. Factor weights within each indicator: #1 Queue Reversal (60% net MW momentum, 20% withdrawal acceleration, 20% wait time); #2 DRAM Index (30% price level, 30% momentum, 20% acceleration, 20% grey-market spread); #3 DC Permit (30% land acquisition, 30% permit velocity, 20% approval rate, 10% construction starts, 10% regulatory friction); #4 Electrical Equipment (equal-weight backlog growth, book-to-bill, lead-time elongation — hand-calibrated 24-month series); #5 AI Financing Stress (20% CDS spread, 40% HY/IG premium, 40% private round velocity). All factor scores clipped to [−5, +5] before weighting. Positive composite = conditions above Apr 2024 baseline on average; negative = below. For full methodology and data tables, see individual indicator monitors #1–#5.
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+
+  const MO = [
+    "Apr '24","May '24","Jun '24","Jul '24","Aug '24","Sep '24",
+    "Oct '24","Nov '24","Dec '24","Jan '25","Feb '25","Mar '25",
+    "Apr '25","May '25","Jun '25","Jul '25","Aug '25","Sep '25",
+    "Oct '25","Nov '25","Dec '25","Jan '26","Feb '26","Mar '26"
+  ];
+  const N = MO.length, L = N - 1;
+  const cl = (v,a,b) => Math.max(a, Math.min(b, v));
+  const rd = (v,d=2)  => parseFloat(v.toFixed(d));
+  const sn = v => (v >= 0 ? '+' : '') + v.toFixed(1);
+
+  // ── #1 QUEUE REVERSAL ─────────────────────────────────────────────────────
+  const netMW    = [308,822,1006,1000,1991,1514,2717,3714,3937,4258,5592,6581,6772,7331,6944,5616,5378,4069,2942,1739,644,-252,-53,-696];
+  const withdrawn= [2332,2023,1882,1941,1902,1982,1757,1552,1437,1571,1429,1387,1317,1494,1440,1692,2364,2641,3051,3844,4434,4773,4440,4391];
+  const avgWait  = [2.7,2.7,2.7,2.6,2.8,2.8,2.8,2.8,3.2,3.3,3.2,3.6,3.8,3.8,3.8,4.1,4.0,4.0,3.9,4.2,4.2,4.3,4.5,4.3];
+  const s1a = netMW.map(v => rd(cl(v/400,-5,5)));
+  const s1b = withdrawn.map((w,i) => rd(cl(-(i===0?0:w-withdrawn[i-1])/100,-5,5)));
+  const s1c = avgWait.map(w => rd(cl(-(w-2.7)/0.12,-5,5)));
+  const raw1 = s1a.map((v,i) => rd(0.60*v + 0.20*s1b[i] + 0.20*s1c[i]));
+  const idx1 = raw1.map(v => rd(v - raw1[0]));
+
+  // ── #2 DRAM INDEX ─────────────────────────────────────────────────────────
+  const dp = [3.10,2.80,2.50,2.65,2.85,3.10,3.40,3.80,4.20,4.60,5.00,5.50,5.90,6.30,6.80,7.20,7.60,8.20,13.50,19.80,26.50,42.00,48.50,46.20];
+  const spreadPct = [3.5,4.0,4.5,4.0,3.5,3.5,4.0,4.5,5.0,4.5,4.0,4.0,4.5,5.0,5.5,5.5,6.0,6.5,9.0,10.5,11.5,12.0,11.2,10.4];
+  const dpExt = [3.00,...dp];
+  const P_MIN = Math.min(...dp), P_MAX = Math.max(...dp), P_RNG = P_MAX - P_MIN;
+  const lv2   = dp.map(p => rd(cl(-5+10*(p-P_MIN)/P_RNG,-5,5)));
+  const mom2  = dp.map((p,i) => rd(((p/dpExt[i])-1)*100,1));
+  const momS2 = mom2.map(m => rd(cl(m/10*5,-5,5)));
+  const momExt2 = [((3.00/2.90)-1)*100,...mom2];
+  const acc2  = mom2.map((m,i) => rd(m-momExt2[i],1));
+  const accS2 = acc2.map(a => rd(cl(a/15*5,-5,5)));
+  const spS2  = spreadPct.map(s => rd(cl((s-4.5)/4*5,-5,5)));
+  const raw2  = lv2.map((l,i) => rd(0.30*l+0.30*momS2[i]+0.20*accS2[i]+0.20*spS2[i]));
+  const idx2  = raw2.map(v => rd(cl(v - raw2[0], -5, 5)));
+
+  // ── #3 DC PERMIT ─────────────────────────────────────────────────────────
+  const rawLand     = [800,900,1100,1300,1200,1100,1000,900,850,800,900,1000,1200,1400,1600,1900,1800,1700,2140,2380,2810,3620,3920,4812];
+  const rawVelocity = [140,148,155,162,158,151,145,138,130,125,132,142,152,160,168,175,170,165,168,174,159,198,209,247];
+  const rawApproval = [78,79,80,80,79,77,75,73,70,66,68,70,72,73,74,76,74,72,72,69,62,59,57,61];
+  const rawStarts   = [22,24,26,28,27,25,23,21,19,18,20,22,25,27,29,32,31,30,30,32,28,34,36,38];
+  const rawFriction = [1,1,1,1,1,1,2,2,2,2,3,3,3,4,4,5,5,6,6,7,7,8,9,9];
+  function aScore(s,n,r,inv) { return s.map(v => rd(cl((inv?-1:1)*(v-n)/r*5,-5,5))); }
+  const sL3 = aScore(rawLand,900,3000,false), sV3 = aScore(rawVelocity,160,120,false);
+  const sA3 = aScore(rawApproval,70,30,false), sS3 = aScore(rawStarts,25,20,false);
+  const sF3 = aScore(rawFriction,2,7,true);
+  const raw3 = sL3.map((v,i) => rd(v*0.30+sV3[i]*0.30+sA3[i]*0.20+sS3[i]*0.10+sF3[i]*0.10));
+  const idx3 = raw3.map(v => rd(v - raw3[0]));
+
+  // ── #4 ELECTRICAL EQUIPMENT (calibrated series) ───────────────────────────
+  const idx4 = [0,0.5,1,1,1,1.5,1.5,2,2,1.5,1.5,1.5,2,2,2.5,2.5,3,3,3.5,4,3.5,3.5,4,4];
+
+  // ── #5 AI FINANCING ───────────────────────────────────────────────────────
+  const rawCDS = [90,92,95,98,100,102,105,108,110,115,118,120,142,148,155,168,182,196,210,231,224,208,207,218];
+  const rawHY  = [190,195,198,200,205,208,210,215,218,220,225,230,241,252,258,271,282,291,291,328,318,304,298,312];
+  const rawRV  = [48,50,52,54,53,51,50,48,45,44,46,48,54,52,54,48,43,40,38,33,35,34,33,31];
+  const sCDS5  = rawCDS.map(v => rd(cl(-(v-100)/130*5,-5,5)));
+  const sHY5   = rawHY.map(v  => rd(cl(-(v-200)/150*5,-5,5)));
+  const sRV5   = rawRV.map(v  => rd(cl((v-45)/20*5,-5,5)));
+  const raw5   = sCDS5.map((c,i) => rd(0.20*c+0.40*sHY5[i]+0.40*sRV5[i]));
+  const idx5   = raw5.map(v => rd(v - raw5[0]));
+
+  // ── AGGREGATE ─────────────────────────────────────────────────────────────
+  const allIdx  = [idx1, idx2, idx3, idx4, idx5];
+  const aggComp = MO.map((_,i) => rd((idx1[i]+idx2[i]+idx3[i]+idx4[i]+idx5[i])/5));
+  const aggLat  = aggComp[L];
+  const aggPeak = Math.max(...aggComp);
+  const aggPeakMo = MO[aggComp.indexOf(aggPeak)];
+  const latest  = allIdx.map(ix => ix[L]);
+
+  // ── STATUS HELPERS ─────────────────────────────────────────────────────────
+  function factorStatus(v, isStress) {
+    if (isStress) {
+      if (v >= 2)    return { text:'Healthy',         cls:'bg', col:'#00d68f' };
+      if (v >= 0)    return { text:'Neutral',          cls:'by', col:'#f5c518' };
+      if (v >= -1.5) return { text:'Stressed',         cls:'bo', col:'#ff9a3c' };
+      return                { text:'Deteriorating',    cls:'br', col:'#ff4d6a' };
+    }
+    if (v >= 2)    return { text:'Expanding',        cls:'bg', col:'#00d68f' };
+    if (v >= 0.5)  return { text:'Stable',            cls:'bb', col:'#4d9fff' };
+    if (v >= 0)    return { text:'Neutral',           cls:'by', col:'#f5c518' };
+    if (v >= -1.5) return { text:'Softening',         cls:'bo', col:'#ff9a3c' };
+    if (v >= -3)   return { text:'Reversal Signal',   cls:'br', col:'#ff4d6a' };
+    return                { text:'Severe Reversal',   cls:'br', col:'#ff4d6a' };
+  }
+  function aggStatus(v) {
+    if (v >= 2)    return { text:'Cycle Expanding',  col:'#00d68f' };
+    if (v >= 0.5)  return { text:'Broadly Positive', col:'#4d9fff' };
+    if (v >= 0)    return { text:'Positive · Decelerating', col:'#f5c518' };
+    if (v >= -1)   return { text:'Mixed / Softening', col:'#ff9a3c' };
+    if (v >= -2.5) return { text:'Deteriorating',     col:'#ff4d6a' };
+    return                { text:'Cycle Contraction', col:'#ff4d6a' };
+  }
+
+  // ── HERO ───────────────────────────────────────────────────────────────────
+  const as = aggStatus(aggLat);
+  const heroV = document.getElementById('heroVal');
+  heroV.textContent = sn(aggLat); heroV.style.color = as.col;
+  const heroSt = document.getElementById('heroStatus');
+  heroSt.textContent = as.text; heroSt.style.color = as.col; heroSt.style.borderColor = as.col;
+  document.getElementById('heroSub').innerHTML =
+    `Peak ${sn(aggPeak)} (${aggPeakMo})<br>` +
+    `Bull: #4 Equip. (+${latest[3].toFixed(1)})<br>` +
+    `Bears: #1 Queue (${sn(latest[0])}), #5 Fin. (${sn(latest[4])})`;
+  const csEl = document.getElementById('chartScore');
+  csEl.textContent = sn(aggLat); csEl.style.color = as.col;
+
+  // ── SCORE STRIP + SUB-CARDS ────────────────────────────────────────────────
+  const isStress      = [false, false, false, false, true];
+  const overrideBadge = [null, 'Positive but slowing', null, null, null];
+  const overrideCls   = [null, 'by', null, null, null];
+
+  allIdx.forEach((ix, fi) => {
+    const v  = ix[L];
+    const si = factorStatus(v, isStress[fi]);
+    const bTxt = overrideBadge[fi] || si.text;
+    const bCls = overrideCls[fi]   || si.cls;
+    // score strip
+    const ssc = document.getElementById(`ss${fi+1}score`);
+    const ssb = document.getElementById(`ss${fi+1}badge`);
+    ssc.textContent = sn(v); ssc.style.color = si.col;
+    ssb.textContent = bTxt; ssb.className = 'ss-badge ' + bCls;
+    // sub-card header
+    const sfc = document.getElementById(`sf${fi+1}score`);
+    const sfb = document.getElementById(`sf${fi+1}badge`);
+    sfc.textContent = sn(v); sfc.style.color = si.col;
+    sfb.textContent = bTxt; sfb.className = 'sub-badge ' + bCls;
+  });
+
+  // ── TAKEAWAY ───────────────────────────────────────────────────────────────
+  const bearCount = latest.filter(v => v < 0).length;
+  document.getElementById('takeaway').innerHTML =
+    `<strong>The aggregate remains above zero with 3 of 5 indicators in positive territory.</strong> ` +
+    `DC Permit shows strong filing and land-acquisition momentum. Electrical Equipment lead times remain elevated, reflecting advance orders placed well ahead of need given chronic supply constraints. ` +
+    `The two indicators worth watching: Queue Reversal and AI Financing — the most forward-looking signals — are both negative. ` +
+    `DRAM adds a first caution flag with momentum dipping negative for the first time since Oct '25. ` +
+    `<strong>The cycle is still positive; the leading signals suggest a pace that might begin to moderate.</strong>`;
+
+  // ── CHARTS ─────────────────────────────────────────────────────────────────
+  Chart.defaults.color       = '#6b7a96';
+  Chart.defaults.font.family = "'IBM Plex Mono', monospace";
+  Chart.defaults.font.size   = 10;
+  Chart.defaults.borderColor = '#1e2535';
+  const grid = { color: 'rgba(30,37,53,.9)', lineWidth: 1 };
+
+  const zeroBand = {
+    id: 'zeroBand',
+    beforeDraw(chart) {
+      const { ctx, chartArea: ca, scales: { y } } = chart;
+      if (!y || !ca) return;
+      const z = Math.max(ca.top, Math.min(ca.bottom, y.getPixelForValue(0)));
+      ctx.save();
+      ctx.fillStyle = 'rgba(0,214,143,.22)';
+      ctx.fillRect(ca.left, ca.top, ca.right-ca.left, z-ca.top);
+      ctx.fillStyle = 'rgba(255,77,106,.22)';
+      ctx.fillRect(ca.left, z, ca.right-ca.left, ca.bottom-z);
+      ctx.strokeStyle = 'rgba(255,255,255,.18)';
+      ctx.lineWidth = 1; ctx.setLineDash([4,4]);
+      ctx.beginPath(); ctx.moveTo(ca.left, z); ctx.lineTo(ca.right, z); ctx.stroke();
+      ctx.restore();
+    }
+  };
+
+  const fColors = ['#4d9fff','#b57bff','#00d68f','#ff9a3c','#ff4d6a'];
+  const fLabels = ['Queue Reversal','DRAM Index','DC Permit','Elec. Equip.','AI Financing'];
+  const allVals = [...aggComp,...idx1,...idx2,...idx3,...idx4,...idx5];
+  const yMin = Math.floor(Math.min(...allVals) - 0.3);
+  const yMax = Math.ceil(Math.max(...allVals)  + 0.3);
+
+  new Chart(document.getElementById('mainChart'), {
+    type: 'line',
+    plugins: [zeroBand],
+    data: {
+      labels: MO,
+      datasets: [
+        ...allIdx.map((ix, fi) => ({
+          label: fLabels[fi], data: ix,
+          borderColor: fColors[fi], borderWidth: 1.2,
+          borderDash: [4,4], pointRadius: 0, tension: 0.3, fill: false, order: 2
+        })),
+        {
+          label: 'Aggregate Index',
+          data: aggComp,
+          borderColor: '#00d68f',
+          borderWidth: 3,
+          segment: {
+            borderColor: ctx => {
+              const a = ctx.p0.parsed.y, b = ctx.p1.parsed.y;
+              return (a >= 0 && b >= 0) ? '#00d68f' : (a < 0 && b < 0) ? '#ff6b35' : '#00d68f';
+            }
+          },
+          pointRadius: aggComp.map((_,i) => i===L ? 7 : 0),
+          pointBackgroundColor: '#00d68f',
+          pointBorderColor: '#e8edf5',
+          pointBorderWidth: 2,
+          tension: 0.3, fill: false, order: 1
+        }
+      ]
+    },
+    options: {
+      responsive: true, animation: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: {
+          display: true, position: 'top', align: 'start',
+          labels: {
+            usePointStyle: true, pointStyle: 'line',
+            boxWidth: 24, padding: 18,
+            font: { size: 10, family: "'IBM Plex Mono', monospace" },
+            color: '#c8d0e0',
+            generateLabels: chart => chart.data.datasets.map((d, i) => ({
+              text: d.label,
+              pointStyle: 'line',
+              strokeStyle: i === 5 ? '#00d68f' : fColors[i],
+              lineWidth: i === 5 ? 3.5 : 1.5,
+              lineDash: i === 5 ? [] : [5,4],
+              fontColor: i === 5 ? '#e8edf5' : '#6b7a96',
+              hidden: false, datasetIndex: i
+            }))
+          }
+        },
+        tooltip: {
+          callbacks: {
+            title: it => MO[it[0].dataIndex],
+            label: ctx => {
+              if (ctx.datasetIndex === 5) return ` Aggregate: ${sn(ctx.raw)}`;
+              return ` ${ctx.dataset.label}: ${sn(ctx.raw)}`;
+            }
+          }
+        }
+      },
+      scales: {
+        x: { grid, ticks: { color:'#6b7a96', maxRotation:0,
+          callback: function(v,i){ return i%3===0?this.getLabelForValue(v):''; } } },
+        y: { grid, min: yMin, max: yMax,
+          ticks: { color:'#6b7a96', stepSize:1, callback: v => (v>0?'+':'')+v },
+          title: { display:true, text:"Index (base Apr '24 = 0)", color:'#4a5568', font:{size:9} } }
+      }
+    }
+  });
+
+  // ── SPARKLINES ─────────────────────────────────────────────────────────────
+  function sparkline(id, data, color) {
+    const el = document.getElementById(id); if (!el) return;
+    const mn = Math.min(...data), mx = Math.max(...data);
+    new Chart(el, {
+      type: 'line',
+      data: {
+        labels: MO,
+        datasets: [{
+          data, borderColor: color, borderWidth: 1.5,
+          pointRadius: data.map((_,i) => i===L ? 3.5 : 0),
+          pointBackgroundColor: color, tension: 0.3, fill: false
+        }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false, animation: false,
+        plugins: { legend:{display:false}, tooltip:{enabled:false} },
+        scales: { x:{display:false}, y:{display:false, min:mn-0.1, max:mx+0.1} }
+      }
+    });
+  }
+
+  sparkline('spark1', idx1, '#4d9fff');
+  sparkline('spark2', idx2, '#b57bff');
+  sparkline('spark3', idx3, '#00d68f');
+  sparkline('spark4', idx4, '#ff9a3c');
+  sparkline('spark5', idx5, '#ff4d6a');
+
+}); // end DOMContentLoaded
+</script>
+</body>
+</html>
