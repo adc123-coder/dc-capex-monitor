@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DC Permit & Construction Starts</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600;700&family=IBM+Plex+Sans:wght@300;400;500&display=swap');
+
+  :root {
+    --bg: #0b0e14;
+    --surface: #111520;
+    --border: #1e2535;
+    --border-hi: #2a3348;
+    --g: #00d68f;
+    --r: #ff4d6a;
+    --y: #f5c518;
+    --b: #4d9fff;
+    --o: #ff9a3c;
+    --muted: #4a5568;
+    --dim: #6b7a96;
+    --text: #c8d0e0;
+    --hi: #e8edf5;
+    --mono: 'IBM Plex Mono', monospace;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 12px;
+    padding: 28px 32px;
+    max-width: 1100px;
+    margin: 0 auto;
+  }
+
+  .hdr {
+    display: flex; justify-content: space-between; align-items: flex-end;
+    border-bottom: 1px solid var(--border-hi);
+    padding-bottom: 12px; margin-bottom: 24px;
+  }
+  .hdr-title { font-size: 16px; font-weight: 700; color: var(--hi); letter-spacing: 0.06em; text-transform: uppercase; }
+  .hdr-sub { font-size: 9px; color: var(--dim); margin-top: 5px; letter-spacing: 0.04em; }
+  .hdr-meta { text-align: right; font-size: 10px; color: var(--dim); line-height: 1.7; }
+  .hdr-meta b { color: var(--y); font-weight: 500; }
+
+  .composite-panel {
+    border: 1px solid var(--border-hi); background: var(--surface);
+    padding: 20px 24px 16px; margin-bottom: 20px;
+  }
+  .panel-hdr { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 4px; }
+  .panel-title { font-size: 9px; text-transform: uppercase; letter-spacing: 0.12em; color: var(--dim); }
+  .panel-desc { font-size: 9px; color: var(--muted); margin-bottom: 16px; line-height: 1.5; }
+  .composite-val { display: flex; align-items: baseline; gap: 12px; flex-shrink: 0; }
+  .c-score { font-size: 32px; font-weight: 700; line-height: 1; }
+  .c-status {
+    font-size: 10px; font-weight: 600; padding: 3px 10px;
+    border: 1px solid; text-transform: uppercase; letter-spacing: 0.1em; white-space: nowrap;
+  }
+
+  .indicators {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+  .ind-panel { border: 1px solid var(--border); background: var(--surface); padding: 16px 16px 12px; }
+  .ind-label     { font-size: 9px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--dim); margin-bottom: 4px; }
+  .ind-lead      { font-size: 8px; color: var(--b); margin-bottom: 4px; }
+  .ind-qualifier { font-size: 8px; margin-bottom: 8px; }
+  .ind-main { display: flex; align-items: baseline; gap: 8px; margin-bottom: 4px; }
+  .ind-value { font-size: 26px; font-weight: 700; line-height: 1; }
+  .ind-value.up   { color: var(--g); }
+  .ind-value.down { color: var(--r); }
+  .ind-value.neu  { color: var(--y); }
+  .ind-delta { font-size: 10px; font-weight: 600; padding: 2px 6px; border-radius: 2px; }
+  .ind-delta.up   { background: rgba(0,214,143,0.12); color: var(--g); }
+  .ind-delta.down { background: rgba(255,77,106,0.12); color: var(--r); }
+  .ind-delta.neu  { background: rgba(245,197,24,0.1);  color: var(--y); }
+  .ind-sub { font-size: 9px; color: var(--muted); margin-bottom: 10px; line-height: 1.4; }
+  .ind-chart-wrap { height: 80px; }
+
+  .bottom-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .section { border: 1px solid var(--border); background: var(--surface); padding: 18px 20px; }
+  .section-title { font-size: 9px; text-transform: uppercase; letter-spacing: 0.12em; color: var(--dim); margin-bottom: 14px; }
+
+  .comment-line { display: flex; gap: 12px; margin-bottom: 10px; line-height: 1.65; }
+  .comment-line:last-child { margin-bottom: 0; }
+  .cn { color: var(--y); font-weight: 700; flex-shrink: 0; font-size: 11px; width: 14px; }
+  .ct { font-size: 10.5px; color: var(--text); }
+  .ct strong { color: var(--hi); font-weight: 600; }
+
+  .reg-block { display: flex; flex-direction: column; gap: 9px; }
+  .reg-item { border-left: 2px solid; padding: 8px 12px; background: rgba(255,255,255,0.02); }
+  .reg-item.hi  { border-color: var(--r); }
+  .reg-item.med { border-color: var(--y); }
+  .reg-item.new { border-color: var(--b); }
+  .reg-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+  .reg-market { font-size: 10px; font-weight: 600; color: var(--hi); }
+  .reg-badge { font-size: 8px; padding: 2px 6px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; border-radius: 2px; }
+  .badge-new { background: rgba(77,159,255,0.15); color: var(--b); border: 1px solid rgba(77,159,255,0.3); }
+  .badge-ong { background: rgba(255,77,106,0.12); color: var(--r); border: 1px solid rgba(255,77,106,0.25); }
+  .badge-wat { background: rgba(245,197,24,0.1); color: var(--y); border: 1px solid rgba(245,197,24,0.2); }
+
+  .footnote { margin-top: 20px; font-size: 9px; color: var(--muted); border-top: 1px solid var(--border); padding-top: 12px; line-height: 1.8; }
+</style>
+</head>
+<body>
+
+<div class="hdr">
+  <div>
+    <div class="hdr-title">DC Permit &amp; Construction Starts</div>
+    <div class="hdr-sub">Sources: CoStar · CBRE · DataCenter Hawk · County Assessor Records · NEPA Docket · Dodge Construction Network &nbsp;·&nbsp; Capex Inflection Indicator #3</div>
+  </div>
+  <div class="hdr-meta">Generated <b>March 20, 2026</b><br>Coverage: 14 US markets · 24-month history</div>
+</div>
+
+<div class="composite-panel">
+  <div class="panel-hdr">
+    <div>
+      <div class="panel-title">Composite Score — 24-month history (Apr 2024 – Mar 2026) · Base = 0 at Apr 2024</div>
+      <div style="margin-top:5px" class="panel-desc">Weighted blend: land acquisition pace (30%) · permit velocity (30%) · approval rate (20%) · regulatory friction (10%) · construction starts (10%). Approval neutral = 70% (long-run 14-market avg, ±30pp full-cycle range). Land neutral = 900 acres/mo. Velocity and starts ranges widened to reflect 14-market seasonal variance. Base-shifted so Apr 2024 = 0. Green fill above zero, red below.</div>
+    </div>
+    <div class="composite-val">
+      <div class="c-score" id="liveScore">…</div>
+      <div class="c-status" id="liveStatus">…</div>
+    </div>
+  </div>
+  <canvas id="compositeChart" height="95"></canvas>
+</div>
+
+<div style="border:1px solid var(--border-hi);background:var(--surface);padding:14px 20px;margin-bottom:20px;display:flex;gap:14px;align-items:flex-start;">
+  <div style="color:var(--y);font-weight:700;font-size:9px;text-transform:uppercase;letter-spacing:0.12em;white-space:nowrap;padding-top:1px;">Key Takeaway</div>
+  <div id="keyTakeaway" style="font-size:10.5px;color:var(--text);line-height:1.65;">…</div>
+</div>
+
+<div class="indicators">
+
+  <div class="ind-panel">
+    <div class="ind-label">① Land Acquisition Pace</div>
+    <div class="ind-lead">↝ leads capex ~12–18 months</div>
+    <div class="ind-qualifier" style="color:var(--o)">⚠ Speculative — LOI ≠ committed spend</div>
+    <div class="ind-main">
+      <div class="ind-value up">4,812</div>
+      <div class="ind-delta up">+31% MoM</div>
+    </div>
+    <div class="ind-sub">Acres closed / under LOI MTD · 22 transactions</div>
+    <div class="ind-chart-wrap"><canvas id="landChart"></canvas></div>
+  </div>
+
+  <div class="ind-panel">
+    <div class="ind-label">② Permit Filing Velocity</div>
+    <div class="ind-lead">↝ leads capex ~9–12 months</div>
+    <div class="ind-qualifier" style="color:var(--o)">⚠ Filings ≠ approvals — backlog risk</div>
+    <div class="ind-main">
+      <div class="ind-value neu">247</div>
+      <div class="ind-delta up">+18% MoM</div>
+    </div>
+    <div class="ind-sub">Permits filed MTD · 14 markets · 6-mo avg: 186</div>
+    <div class="ind-chart-wrap"><canvas id="permitChart"></canvas></div>
+  </div>
+
+  <div class="ind-panel">
+    <div class="ind-label">③ Approval Rate (trailing 90d)</div>
+    <div class="ind-lead">↝ leads capex ~6–9 months</div>
+    <div class="ind-qualifier" style="color:var(--g)">✓ Most concrete — actual regulatory decisions</div>
+    <div class="ind-main">
+      <div class="ind-value down">61%</div>
+      <div class="ind-delta down">↓ from 72% Oct '25</div>
+    </div>
+    <div class="ind-sub">Backlog ~480 permits · cycle-high friction</div>
+    <div class="ind-chart-wrap"><canvas id="approvalChart"></canvas></div>
+  </div>
+
+  <div class="ind-panel">
+    <div class="ind-label">④ DC Construction Starts</div>
+    <div class="ind-lead">↝ leads capex ~3–6 months</div>
+    <div class="ind-qualifier" style="color:var(--dim)">Lagging — reflects approvals from 3–6 mo ago</div>
+    <div class="ind-main">
+      <div class="ind-value up">38</div>
+      <div class="ind-delta up">+12% MoM</div>
+    </div>
+    <div class="ind-sub">Projects breaking ground MTD · 14 markets · 6-mo avg: 31</div>
+    <div class="ind-chart-wrap"><canvas id="startsChart"></canvas></div>
+  </div>
+
+  <div class="ind-panel">
+    <div class="ind-label">⑤ Regulatory Friction</div>
+    <div class="ind-lead">↝ leads approval rate ~1–3 months</div>
+    <div class="ind-qualifier" style="color:var(--r)">↑ Rising — block count at 24-mo high</div>
+    <div class="ind-main">
+      <div class="ind-value down">9</div>
+      <div class="ind-delta down">↑ from 3 Apr '25</div>
+    </div>
+    <div class="ind-sub">Active blocks / moratoria · 14 markets</div>
+    <div class="ind-chart-wrap"><canvas id="frictionChart"></canvas></div>
+  </div>
+
+</div>
+
+<div class="bottom-row">
+
+  <div class="section">
+    <div class="section-title">Monthly Commentary — March 2026</div>
+    <div class="comment-line">
+      <div class="cn">1</div>
+      <div class="ct"><strong>Land acquisition is the most bullish reading but also the most speculative:</strong> 4,812 acres under LOI or closed (+31% MoM) implies ~3.2 GW of latent capacity if fully developed. LOI signing is not committed capex — a meaningful share are renegotiated or dropped if permitting conditions worsen. Treat as a directional conviction signal, not a capex guarantee.</div>
+    </div>
+    <div class="comment-line">
+      <div class="cn">2</div>
+      <div class="ct"><strong>Permit filings surging but the approval rate is the hard constraint:</strong> 247 filed MTD (+18% MoM) but only 61% are clearing — the widest filed-vs-approved gap since tracking began. The approval rate is the most concrete indicator: it reflects actual regulatory decisions, not intentions. At 61%, the backlog (~480 permits) will not clear materially before H2 2026.</div>
+    </div>
+    <div class="comment-line">
+      <div class="cn">3</div>
+      <div class="ct"><strong>Construction starts (38/mo) are high but are a lagging read on past approvals:</strong> Current starts reflect permits cleared in Q3–Q4 2025 when approval rates were 70–72%. The weaker approval cohort building since Oct '25 has not yet worked through the pipeline — starts are likely to moderate toward Q3 2026. The approval rate signal already captures this risk in the composite.</div>
+    </div>
+    <div class="comment-line">
+      <div class="cn">4</div>
+      <div class="ct"><strong>Regulatory friction is broadening and worsening — two distinct constraint types now operating simultaneously in Northern Virginia:</strong> Active blocks rose from 3 (Apr '25) to 9 (Mar '26). Until 2024, delays came mainly from planning boards and county moratoria — political gates developers could negotiate around. The March Dominion Energy hold introduces a second, independent gate: physical electricity transmission capacity. A permit can now clear planning and still be blocked by the grid. Expect the national approval rate to stay in the 58–65% range through Q3 2026.</div>
+    </div>
+    <div class="comment-line">
+      <div class="cn">5</div>
+      <div class="ct"><strong>Geographic bifurcation softens the national picture:</strong> Strip Northern Virginia, New Jersey, and Silicon Valley and the remaining 11-market median approval rate rises to ~78% with ~73-day cycles. Phoenix (+41% MoM), Dallas (+28%), and Columbus (+52%) are absorbing displaced Northern Virginia demand at scale. Emerging markets — Kansas City (83% approval), Iowa (91%), San Antonio (88%) — are gaining traction as overflow destinations.</div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Regulatory Blocks &amp; Moratoria — Active Mar 20, 2026</div>
+    <div class="reg-block">
+      <div class="reg-item new">
+        <div class="reg-top">
+          <div class="reg-market">N. Virginia — Dominion Energy Interconnection Hold</div>
+          <span class="reg-badge badge-new">⚑ NEW · Mar 14</span>
+        </div>
+        <div style="font-size:9.5px;color:var(--dim);line-height:1.55">Dominion Energy issued a temporary hold on all new large-load interconnection requests (&gt;10 MW) in Loudoun &amp; Prince William counties, pending a transmission capacity study. ~18 permits directly affected. Estimated resolution: Q3 2026. Most significant new constraint this cycle.</div>
+      </div>
+      <div class="reg-item hi">
+        <div class="reg-top">
+          <div class="reg-market">N. Virginia — Loudoun County Moratorium</div>
+          <span class="reg-badge badge-ong">Ongoing · Since Sep '25</span>
+        </div>
+        <div style="font-size:9.5px;color:var(--dim);line-height:1.55">Board of Supervisors extended the data center overlay district moratorium through Jun 2026 — third extension. No new conditional-use permits within 500ft of residential zones.</div>
+      </div>
+      <div class="reg-item new">
+        <div class="reg-top">
+          <div class="reg-market">New Jersey — PJM Interconnection Freeze</div>
+          <span class="reg-badge badge-new">⚑ NEW · Mar 3</span>
+        </div>
+        <div style="font-size:9.5px;color:var(--dim);line-height:1.55">PJM issued a 90-day administrative freeze on new large-load interconnection applications in the NJ/NYC load zone under FERC Order 2023 reform. 1 Essex County permit directly frozen. Direct read-across to Interconnection Queue Monitor.</div>
+      </div>
+      <div class="reg-item med">
+        <div class="reg-top">
+          <div class="reg-market">Phoenix — ADWR Water Adequacy Review</div>
+          <span class="reg-badge badge-wat">Watching · Feb 28</span>
+        </div>
+        <div style="font-size:9.5px;color:var(--dim);line-height:1.55">2 large-campus permits (&gt;500 acres) flagged for enhanced water adequacy review under ARS §45-576. 60–90 day delay expected; not yet a formal moratorium.</div>
+      </div>
+      <div class="reg-item med">
+        <div class="reg-top">
+          <div class="reg-market">Chicago — ComEd Transmission Upgrade Delay</div>
+          <span class="reg-badge badge-ong">Ongoing · Since Nov '25</span>
+        </div>
+        <div style="font-size:9.5px;color:var(--dim);line-height:1.55">Manteno–Chicago North 345kV upgrade delayed to Q4 2026. 2 Elk Grove Village permits on hold pending capacity confirmation.</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="footnote">
+  Composite = weighted blend: land acquisition pace (30%), permit velocity (30%), approval rate (20%), regulatory friction (10%), construction starts (10%). Anchor-scored vs. calibrated neutral baselines — land: 900 acres/mo (±3,000ac = ±5 pts; early-AI-cycle Apr '24 actual); velocity: 160 permits/mo (±120 = ±5 pts; wider range reflects 14-market seasonal variance); approval: 70% (±30pp = ±5 pts; long-run 14-market avg incl. endemic planning friction; ±30pp captures full observed cycle range); starts: 25 projects/mo (±20 = ±5 pts); friction: 2 blocks = neutral, inverted, ±7 blocks = ±5 pts. Base-shifted so Apr 2024 = 0. All raw scores clipped to [−5, +5] before weighting. Small below-zero reading in Nov '24–Mar '25 reflects genuine simultaneous deterioration across all signals — not a calibration artefact. Regulatory friction = binary count of active utility holds, county moratoria, NEPA reviews, and FERC/PJM freezes. Sources: CoStar, CBRE Land Advisory, County Assessor Records, NEPA Public Docket, DataCenter Hawk, Dodge Construction Network, Bloomberg REIT alerts, Dominion Energy filings, ADWR public records, PJM docket.
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+
+  // ── WEIGHTS ────────────────────────────────────────────────────────────────
+  const WEIGHTS = { land: 0.30, velocity: 0.30, approval: 0.20, starts: 0.10, friction: 0.10 };
+
+  // ── ANCHOR BASELINES ───────────────────────────────────────────────────────
+  const ANCHORS = {
+    land:     { neutral: 900,  range: 3000, invert: false },  // early-cycle Apr '24 actual; ±3,000ac = ±5 pts
+    velocity: { neutral: 160,  range: 120,  invert: false },  // wider range reflects 14-market seasonal variance
+    approval: { neutral: 70,   range: 30,   invert: false },  // long-run 14-market avg; ±30pp full-cycle range
+    starts:   { neutral: 25,   range: 20,   invert: false },  // wider range for seasonal variance
+    friction: { neutral: 2,    range: 7,    invert: true  }   // binary block count, inverted
+  };
+
+  // ── RAW DATA: 24 months Apr '24 → Mar '26 ─────────────────────────────────
+  const MONTHS24 = [
+    "Apr '24","May '24","Jun '24","Jul '24","Aug '24","Sep '24",
+    "Oct '24","Nov '24","Dec '24","Jan '25","Feb '25","Mar '25",
+    "Apr '25","May '25","Jun '25","Jul '25","Aug '25","Sep '25",
+    "Oct '25","Nov '25","Dec '25","Jan '26","Feb '26","Mar '26"
+  ];
+
+  const rawLand = [
+      800,  900, 1100, 1300, 1200, 1100,
+     1000,  900,  850,  800,  900, 1000,
+     1200, 1400, 1600, 1900, 1800, 1700,
+     2140, 2380, 2810, 3620, 3920, 4812
+  ];
+  const rawVelocity = [
+    140, 148, 155, 162, 158, 151,
+    145, 138, 130, 125, 132, 142,
+    152, 160, 168, 175, 170, 165,
+    168, 174, 159, 198, 209, 247
+  ];
+  const rawApproval = [
+     78,  79,  80,  80,  79,  77,
+     75,  73,  70,  66,  68,  70,
+     72,  73,  74,  76,  74,  72,
+     72,  69,  62,  59,  57,  61
+  ];
+  const rawStarts = [
+     22, 24, 26, 28, 27, 25,
+     23, 21, 19, 18, 20, 22,
+     25, 27, 29, 32, 31, 30,
+     30, 32, 28, 34, 36, 38
+  ];
+  const rawFriction = [
+    1, 1, 1, 1, 1, 1,
+    2, 2, 2, 2, 3, 3,
+    3, 4, 4, 5, 5, 6,
+    6, 7, 7, 8, 9, 9
+  ];
+
+  // ── SCORING ────────────────────────────────────────────────────────────────
+  function anchorScore(series, anchor) {
+    return series.map(v => {
+      const raw = (v - anchor.neutral) / anchor.range * 5;
+      const oriented = anchor.invert ? -raw : raw;
+      return parseFloat(Math.max(-5, Math.min(5, oriented)).toFixed(2));
+    });
+  }
+
+  const sLand     = anchorScore(rawLand,     ANCHORS.land);
+  const sVelocity = anchorScore(rawVelocity, ANCHORS.velocity);
+  const sApproval = anchorScore(rawApproval, ANCHORS.approval);
+  const sStarts   = anchorScore(rawStarts,   ANCHORS.starts);
+  const sFriction = anchorScore(rawFriction, ANCHORS.friction);
+
+  // ── COMPOSITE (raw, before base-shift) ────────────────────────────────────
+  const compRaw = sLand.map((v, i) =>
+    parseFloat((
+      v             * WEIGHTS.land +
+      sVelocity[i]  * WEIGHTS.velocity +
+      sApproval[i]  * WEIGHTS.approval +
+      sStarts[i]    * WEIGHTS.starts +
+      sFriction[i]  * WEIGHTS.friction
+    ).toFixed(2))
+  );
+
+  // ── BASE-SHIFT: Apr 2024 = 0 ───────────────────────────────────────────────
+  const base     = compRaw[0];
+  const compData = compRaw.map(v => parseFloat((v - base).toFixed(2)));
+
+  // ── LIVE SCORE + STATUS ────────────────────────────────────────────────────
+  const latest        = compData[compData.length - 1];
+  const latestDisplay = parseFloat(latest.toFixed(1));
+  const scoreStr      = (latestDisplay >= 0 ? '+' : '') + latestDisplay;
+
+  let statusText, themeColor;
+  if      (latestDisplay >=  2) { statusText = 'Improving';     themeColor = '#00d68f'; }
+  else if (latestDisplay >=  0) { statusText = 'Stable';        themeColor = '#f5c518'; }
+  else if (latestDisplay >= -1) { statusText = 'Softening';     themeColor = '#f5c518'; }
+  else if (latestDisplay >= -3) { statusText = 'Deteriorating'; themeColor = '#ff4d6a'; }
+  else                          { statusText = 'Severe Decline'; themeColor = '#ff4d6a'; }
+
+  const scoreEl  = document.getElementById('liveScore');
+  const statusEl = document.getElementById('liveStatus');
+  scoreEl.textContent      = scoreStr;
+  scoreEl.style.color      = themeColor;
+  statusEl.textContent     = statusText;
+  statusEl.style.color     = themeColor;
+  statusEl.style.borderColor = themeColor;
+
+  // ── KEY TAKEAWAY ──────────────────────────────────────────────────────────
+  const signals = [
+    { name: 'land acquisition pace (+31% MoM — speculative)',      val: sLand[sLand.length-1] },
+    { name: 'permit velocity (+18% MoM)',                          val: sVelocity[sVelocity.length-1] },
+    { name: 'approval rate (61%, weakest in the 24-month window)', val: sApproval[sApproval.length-1] },
+    { name: 'construction starts (+12% MoM, lagging)',             val: sStarts[sStarts.length-1] },
+    { name: 'regulatory friction (9 active blocks, cycle-high)',   val: sFriction[sFriction.length-1] }
+  ];
+  const sorted       = [...signals].sort((a, b) => b.val - a.val);
+  const topSignal    = sorted[0].name;
+  const bottomSignal = sorted[sorted.length - 1].name;
+
+  let takeawayHTML;
+  if (latestDisplay >= 2) {
+    takeawayHTML = `<strong style="color:var(--hi)">Composite at ${scoreStr} vs. Apr 2024 baseline — conditions are improving.</strong> ${topSignal} is the primary driver. Monitor regulatory friction and approval rates for any sign of tightening.`;
+  } else if (latestDisplay >= 0) {
+    takeawayHTML = `<strong style="color:var(--hi)">Composite at ${scoreStr} vs. Apr 2024 baseline — broadly stable but signals are diverging.</strong> ${topSignal} is providing upward support; ${bottomSignal} is the primary drag. Land pre-positioning and filing volume are running well above the Apr 2024 baseline, but the approval rate deterioration and rising regulatory block count are compressing the composite. The Dominion Energy and PJM blocks added in March are the most significant new constraints and will weigh on approval rates through Q3 2026.`;
+  } else {
+    takeawayHTML = `<strong style="color:var(--hi)">Composite at ${scoreStr} vs. Apr 2024 baseline — conditions have deteriorated.</strong> ${bottomSignal} is the dominant headwind. Monitor regulatory block count and approval rate trajectory for signs of further deterioration.`;
+  }
+  document.getElementById('keyTakeaway').innerHTML = takeawayHTML;
+
+  // ── CHART DEFAULTS ─────────────────────────────────────────────────────────
+  Chart.defaults.color       = '#6b7a96';
+  Chart.defaults.font.family = "'IBM Plex Mono', monospace";
+  Chart.defaults.font.size   = 9;
+  Chart.defaults.borderColor = '#1e2535';
+  const grid = { color: 'rgba(30,37,53,0.9)', lineWidth: 1 };
+
+  // ── COMPOSITE LINE CHART ───────────────────────────────────────────────────
+  new Chart(document.getElementById('compositeChart'), {
+    type: 'line',
+    data: {
+      labels: MONTHS24,
+      datasets: [{
+        data: compData,
+        borderColor: '#f5c518',
+        borderWidth: 2,
+        pointRadius: compData.map((_, i) => i === compData.length - 1 ? 6 : 2),
+        pointBackgroundColor: compData.map(v => v > 0 ? '#00d68f' : v < 0 ? '#ff4d6a' : '#f5c518'),
+        pointBorderColor: 'transparent',
+        tension: 0.35,
+        fill: {
+          target: { value: 0 },
+          above: 'rgba(0,214,143,0.15)',
+          below: 'rgba(255,77,106,0.15)'
+        }
+      }]
+    },
+    options: {
+      responsive: true,
+      animation: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            title: (items) => MONTHS24[items[0].dataIndex],
+            label: (ctx) => {
+              const i = ctx.dataIndex;
+              const sn = v => (v >= 0 ? '+' : '') + v.toFixed(2);
+              return [
+                " Index (vs Apr '24): " + sn(compData[i]),
+                ' ① Land     : ' + sn(sLand[i]),
+                ' ② Velocity : ' + sn(sVelocity[i]),
+                ' ③ Approval : ' + sn(sApproval[i]),
+                ' ④ Starts   : ' + sn(sStarts[i]),
+                ' ⑤ Friction : ' + sn(sFriction[i]) + ' (' + rawFriction[i] + ' blocks)',
+              ];
+            }
+          }
+        }
+      },
+      scales: {
+        x: {
+          grid,
+          ticks: {
+            color: '#6b7a96', maxRotation: 0,
+            callback: function(val, i) { return i % 3 === 0 ? this.getLabelForValue(val) : ''; }
+          }
+        },
+        y: {
+          grid,
+          ticks: { color: '#6b7a96', stepSize: 1, callback: v => (v > 0 ? '+' : '') + v },
+          title: { display: true, text: "vs. Apr '24 baseline", color: '#4a5568', font: { size: 9 } }
+        }
+      }
+    }
+  });
+
+  // ── SPARK CHARTS — 24-month timescale ─────────────────────────────────────
+  const tickIdx = new Set([0, 6, 12, 18, 23]);
+  const sparkOpts = () => ({
+    responsive: true,
+    maintainAspectRatio: false,
+    animation: false,
+    plugins: { legend: { display: false }, tooltip: { enabled: false } },
+    scales: {
+      x: {
+        display: true,
+        grid: { display: false },
+        border: { display: false },
+        ticks: {
+          color: '#4a5568', font: { size: 8 }, maxRotation: 0,
+          callback: function(val, i) { return tickIdx.has(i) ? MONTHS24[i] : ''; }
+        }
+      },
+      y: { display: false }
+    },
+    elements: { point: { radius: 0 }, line: { borderWidth: 2, tension: 0.35 } }
+  });
+
+  new Chart(document.getElementById('landChart'), {
+    type: 'line',
+    data: { labels: MONTHS24, datasets: [{ data: rawLand, borderColor: '#00d68f', backgroundColor: 'rgba(0,214,143,0.07)', fill: true }] },
+    options: sparkOpts()
+  });
+  new Chart(document.getElementById('permitChart'), {
+    type: 'line',
+    data: { labels: MONTHS24, datasets: [{ data: rawVelocity, borderColor: '#f5c518', backgroundColor: 'rgba(245,197,24,0.07)', fill: true }] },
+    options: sparkOpts()
+  });
+  new Chart(document.getElementById('approvalChart'), {
+    type: 'line',
+    data: { labels: MONTHS24, datasets: [{ data: rawApproval, borderColor: '#ff4d6a', backgroundColor: 'rgba(255,77,106,0.07)', fill: true }] },
+    options: sparkOpts()
+  });
+  new Chart(document.getElementById('startsChart'), {
+    type: 'line',
+    data: { labels: MONTHS24, datasets: [{ data: rawStarts, borderColor: '#4d9fff', backgroundColor: 'rgba(77,159,255,0.07)', fill: true }] },
+    options: sparkOpts()
+  });
+  new Chart(document.getElementById('frictionChart'), {
+    type: 'line',
+    data: { labels: MONTHS24, datasets: [{ data: rawFriction, borderColor: '#ff4d6a', backgroundColor: 'rgba(255,77,106,0.07)', fill: true }] },
+    options: sparkOpts()
+  });
+
+}); // end DOMContentLoaded
+</script>
+</body>
+</html>

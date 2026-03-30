@@ -1,0 +1,625 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Financing Stress Monitor</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600;700&family=IBM+Plex+Sans:wght@300;400;500&display=swap');
+
+  :root {
+    --bg: #0b0e14;
+    --surface: #111520;
+    --border: #1e2535;
+    --border-hi: #2a3348;
+    --g: #00d68f;
+    --r: #ff4d6a;
+    --y: #f5c518;
+    --b: #4d9fff;
+    --o: #ff9a3c;
+    --v: #b57bff;
+    --muted: #4a5568;
+    --dim: #6b7a96;
+    --text: #c8d0e0;
+    --hi: #e8edf5;
+    --mono: 'IBM Plex Mono', monospace;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 12px;
+    padding: 28px 32px;
+    max-width: 1100px;
+    margin: 0 auto;
+  }
+
+  .hdr {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    border-bottom: 1px solid var(--border-hi);
+    padding-bottom: 12px;
+    margin-bottom: 24px;
+  }
+  .hdr-title { font-size: 16px; font-weight: 700; color: var(--hi); letter-spacing: 0.06em; text-transform: uppercase; }
+  .hdr-sub { font-size: 9px; color: var(--dim); margin-top: 5px; letter-spacing: 0.04em; }
+  .hdr-meta { text-align: right; font-size: 10px; color: var(--dim); line-height: 1.7; }
+  .hdr-meta b { color: var(--y); font-weight: 500; }
+
+  .composite-panel {
+    border: 1px solid var(--border-hi);
+    background: var(--surface);
+    padding: 20px 24px 16px;
+    margin-bottom: 20px;
+  }
+  .panel-hdr {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 4px;
+  }
+  .panel-title { font-size: 9px; text-transform: uppercase; letter-spacing: 0.12em; color: var(--dim); }
+  .panel-desc { font-size: 9px; color: var(--muted); margin-bottom: 16px; line-height: 1.5; }
+  .composite-val { display: flex; align-items: baseline; gap: 12px; flex-shrink: 0; }
+  .c-score { font-size: 32px; font-weight: 700; line-height: 1; }
+  .c-status {
+    font-size: 10px; font-weight: 600; padding: 3px 10px;
+    border: 1px solid; text-transform: uppercase; letter-spacing: 0.1em;
+    white-space: nowrap;
+  }
+
+  .scale-bar {
+    display: flex; align-items: center; gap: 10px;
+    margin-bottom: 14px; margin-top: 2px;
+  }
+  .scale-label { font-size: 8px; color: var(--dim); text-transform: uppercase; letter-spacing: 0.08em; white-space: nowrap; }
+  .scale-track {
+    flex: 1; height: 6px; border-radius: 2px;
+    background: linear-gradient(to right, #ff4d6a 0%, #ff9a3c 25%, #f5c518 50%, #4d9fff 75%, #00d68f 100%);
+    position: relative;
+  }
+  .scale-pip {
+    position: absolute; top: -3px; width: 12px; height: 12px;
+    border-radius: 50%; background: var(--hi); border: 2px solid;
+    transform: translateX(-50%);
+  }
+
+  .indicators {
+    display: grid; grid-template-columns: repeat(3, 1fr);
+    gap: 16px; margin-bottom: 20px;
+  }
+  .ind-panel { border: 1px solid var(--border); background: var(--surface); padding: 18px 20px 14px; }
+  .ind-label { font-size: 9px; text-transform: uppercase; letter-spacing: 0.12em; color: var(--dim); margin-bottom: 10px; }
+  .ind-main { display: flex; align-items: baseline; gap: 10px; margin-bottom: 4px; }
+  .ind-value { font-size: 30px; font-weight: 700; line-height: 1; }
+  .ind-value.bad  { color: var(--r); }
+  .ind-value.warn { color: var(--o); }
+  .ind-value.neu  { color: var(--y); }
+  .ind-value.good { color: var(--g); }
+  .ind-delta { font-size: 11px; font-weight: 600; padding: 2px 7px; border-radius: 2px; }
+  .ind-delta.bad  { background: rgba(255,77,106,0.12); color: var(--r); }
+  .ind-delta.warn { background: rgba(255,154,60,0.12); color: var(--o); }
+  .ind-delta.neu  { background: rgba(245,197,24,0.1);  color: var(--y); }
+  .ind-delta.good { background: rgba(0,214,143,0.12);  color: var(--g); }
+  .ind-sub { font-size: 9px; color: var(--muted); margin-bottom: 14px; }
+  .ind-chart-wrap { height: 80px; }
+
+  .bottom-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .section { border: 1px solid var(--border); background: var(--surface); padding: 18px 20px; }
+  .section-title { font-size: 9px; text-transform: uppercase; letter-spacing: 0.12em; color: var(--dim); margin-bottom: 14px; }
+
+  .comment-line { display: flex; gap: 12px; margin-bottom: 10px; line-height: 1.65; }
+  .comment-line:last-child { margin-bottom: 0; }
+  .cn { color: var(--y); font-weight: 700; flex-shrink: 0; font-size: 11px; width: 14px; }
+  .ct { font-size: 10.5px; color: var(--text); }
+  .ct strong { color: var(--hi); font-weight: 600; }
+
+  .stress-table { width: 100%; border-collapse: collapse; }
+  .stress-table thead tr { border-bottom: 1px solid var(--border-hi); }
+  .stress-table th {
+    font-size: 8px; text-transform: uppercase; letter-spacing: 0.1em;
+    color: var(--dim); font-weight: 500; padding: 0 0 8px 0; text-align: left;
+  }
+  .stress-table th:not(:first-child) { text-align: right; }
+  .stress-table td { font-size: 10px; color: var(--text); padding: 8px 0 0 0; vertical-align: top; }
+  .stress-table td:not(:first-child) { text-align: right; }
+  .stress-table tr:not(:last-child) td { border-bottom: 1px solid rgba(30,37,53,0.6); padding-bottom: 7px; }
+  .ent-name { font-size: 10.5px; font-weight: 600; color: var(--hi); display: block; margin-bottom: 2px; }
+  .ent-sub  { font-size: 8.5px; color: var(--muted); }
+  .val-r { color: var(--r); font-weight: 600; }
+  .val-o { color: var(--o); font-weight: 600; }
+  .val-g { color: var(--g); font-weight: 600; }
+  .val-y { color: var(--y); font-weight: 600; }
+
+  .trend-cell { display: flex; flex-direction: column; gap: 5px; align-items: flex-end; }
+  .trend-row  { display: flex; align-items: center; gap: 6px; width: 100%; justify-content: flex-end; }
+  .trend-label { font-size: 8px; color: var(--dim); white-space: nowrap; }
+  .trend-bar-wrap { width: 64px; height: 5px; background: rgba(255,255,255,0.04); border-radius: 1px; overflow: hidden; }
+  .trend-bar  { height: 100%; border-radius: 1px; }
+  .trend-val  { font-size: 9px; font-weight: 600; width: 44px; text-align: right; white-space: nowrap; }
+
+  .footnote {
+    margin-top: 20px; font-size: 9px; color: var(--muted);
+    border-top: 1px solid var(--border); padding-top: 12px; line-height: 1.8;
+  }
+</style>
+</head>
+<body>
+
+<div class="hdr">
+  <div>
+    <div class="hdr-title">AI Financing Stress Monitor</div>
+    <div class="hdr-sub">Sources: ICE CDS Pricing · Bloomberg Credit · PitchBook · LCD LeveragedCommentary · CoreWeave SEC filings · Fitch/Moody's &nbsp;·&nbsp; Capex Inflection Indicator #5</div>
+  </div>
+  <div class="hdr-meta">
+    Generated <b>March 20, 2026</b><br>
+    Coverage: CDS · HY spreads · Private round velocity · 24-month history
+  </div>
+</div>
+
+<!-- COMPOSITE CHART -->
+<div class="composite-panel">
+  <div class="panel-hdr">
+    <div>
+      <div class="panel-title">Composite Stress Index — 24-month history (Apr 2024 – Mar 2026) · Base = 0</div>
+      <div style="margin-top:5px" class="panel-desc">Weighted blend: CoreWeave CDS spread (20%) · AI HY/IG spread differential (40%) · private-round velocity &amp; down-round rate (40%). Each factor scored vs. neutral baseline, clipped [−5, +5]. Base-shifted: Apr '24 = 0. Green = above baseline · Red = below baseline. Higher = healthier financing conditions.</div>
+    </div>
+    <div class="composite-val">
+      <div class="c-score" id="liveScore">…</div>
+      <div class="c-status" id="liveStatus">…</div>
+    </div>
+  </div>
+  <div class="scale-bar">
+    <span class="scale-label">Stress ↓</span>
+    <div class="scale-track"><div class="scale-pip" id="scalePip"></div></div>
+    <span class="scale-label">↑ Healthy</span>
+  </div>
+  <canvas id="compositeChart" height="95"></canvas>
+</div>
+
+<!-- INDICATORS -->
+<div class="indicators">
+  <div class="ind-panel">
+    <div class="ind-label">① CoreWeave CDS Spread (5yr, bps)</div>
+    <div class="ind-main">
+      <div class="ind-value bad">218</div>
+      <div class="ind-delta bad">↑ +128bps vs Apr '24</div>
+    </div>
+    <div class="ind-sub">5yr senior CDS · ICE mid · pre-IPO: proxy OAS · peak: 231 Nov '25</div>
+    <div class="ind-chart-wrap"><canvas id="cdsChart"></canvas></div>
+  </div>
+  <div class="ind-panel">
+    <div class="ind-label">② AI HY Spread Premium over IG (bps)</div>
+    <div class="ind-main">
+      <div class="ind-value warn">312</div>
+      <div class="ind-delta warn">↑ +122bps vs Apr '24</div>
+    </div>
+    <div class="ind-sub">AI-heavy HY index vs. IG index · 300bps+ = structurally stressed</div>
+    <div class="ind-chart-wrap"><canvas id="spreadChart"></canvas></div>
+  </div>
+  <div class="ind-panel">
+    <div class="ind-label">③ Private AI Round Velocity (deals/mo)</div>
+    <div class="ind-main">
+      <div class="ind-value bad">31</div>
+      <div class="ind-delta bad">↓ −17 vs Apr '24</div>
+    </div>
+    <div class="ind-sub">Series B+ closes · 24-mo peak 54 (Jun '25) · down-round share: 19%</div>
+    <div class="ind-chart-wrap"><canvas id="roundChart"></canvas></div>
+  </div>
+</div>
+
+<!-- BOTTOM ROW -->
+<div class="bottom-row">
+  <div class="section">
+    <div class="section-title">Monthly Commentary — March 2026</div>
+    <div class="comment-line">
+      <div class="cn">1</div>
+      <div class="ct"><strong>Index has deteriorated ~4.3 points from the Apr '24 baseline:</strong> The composite peaked briefly in Jul '24 as round velocity hit a local high and spreads were still contained, then entered a sustained slide. The steepest leg — Aug to Nov '25 — saw CDS widen through 200bps and round velocity collapse from 43 to 33 simultaneously. The current reading sits near the floor of the 24-month window.</div>
+    </div>
+    <div class="comment-line">
+      <div class="cn">2</div>
+      <div class="ct"><strong>CoreWeave CDS re-widening to 218bps:</strong> After compressing to 207bps in Feb, the 5yr spread has re-widened — up 128bps from the Apr '24 proxy baseline. The market is pricing execution risk on CoreWeave's ~$14B debt load as hyperscaler contract renewal windows approach in H2 2026. Not yet distressed, but trajectory is adverse. This component carries only 20% weight — its widening is notable but not the primary composite driver.</div>
+    </div>
+    <div class="comment-line">
+      <div class="cn">3</div>
+      <div class="ct"><strong>AI HY/IG premium at 312bps — the dominant drag at 40% weight:</strong> Up 122bps from 190bps in Apr '24. The 300bps level historically signals structural repricing rather than cyclical noise. Three AI borrowers priced new HY paper in Q1 at OAS 420–490bps — market is clearing but at a significant cost of capital step-up versus 2024 conditions.</div>
+    </div>
+    <div class="comment-line">
+      <div class="cn">4</div>
+      <div class="ct"><strong>Private round velocity equally dominant at 40% weight:</strong> 31 Series B+ closes is down from 48 at the Apr '24 start and 43% below the Jun '25 peak of 54. Down-round share reached 19% in Feb–Mar — first sustained period above 15% since the 2022–23 normalisation. The combined 80% weight on HY spread and round velocity means both need to recover simultaneously to materially improve the composite.</div>
+    </div>
+    <div class="comment-line">
+      <div class="cn">5</div>
+      <div class="ct"><strong>Hyperscalers fully decoupled — stress is neocloud-specific:</strong> Microsoft/Google/Amazon credit trades at sub-80bps, versus 62–79bps in Apr '24. The financing stress story is structural for leveraged pure-plays (CoreWeave, Lambda Labs, Crusoe), not a systemic credit event. Key risk: covenant breach at a major neocloud triggering contagion into the AI HY index and pushing the composite through −5 for the first time.</div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Entity Stress Snapshot — CDS · Spread · Rating Trend</div>
+    <table class="stress-table">
+      <thead>
+        <tr>
+          <th>Entity</th>
+          <th>CDS / OAS (bps)</th>
+          <th>Rating</th>
+          <th>Spread Trend (6mo)</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>
+            <span class="ent-name">CoreWeave</span>
+            <span class="ent-sub">CRWV · US · Neocloud</span>
+          </td>
+          <td><span class="val-r">218 bps</span><br><span style="font-size:8.5px;color:var(--dim)">5yr CDS · +76bps YoY</span></td>
+          <td><span class="val-o">B+</span><br><span style="font-size:8px;color:var(--r)">↓ Watch Neg</span></td>
+          <td>
+            <div class="trend-cell">
+              <div class="trend-row">
+                <span class="trend-label">6mo ago</span>
+                <div class="trend-bar-wrap"><div class="trend-bar" style="width:55%;background:var(--o)"></div></div>
+                <span class="trend-val val-o">192bps</span>
+              </div>
+              <div class="trend-row">
+                <span class="trend-label">current</span>
+                <div class="trend-bar-wrap"><div class="trend-bar" style="width:72%;background:var(--r)"></div></div>
+                <span class="trend-val val-r">218bps</span>
+              </div>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            <span class="ent-name">xAI (term loan)</span>
+            <span class="ent-sub">Private · US · Model Lab</span>
+          </td>
+          <td><span class="val-o">OAS 384 bps</span><br><span style="font-size:8.5px;color:var(--dim)">Mar '26 refin. · $6B TLB</span></td>
+          <td><span class="val-o">B</span><br><span style="font-size:8px;color:var(--y)">→ Stable</span></td>
+          <td>
+            <div class="trend-cell">
+              <div class="trend-row">
+                <span class="trend-label">6mo ago</span>
+                <div class="trend-bar-wrap"><div class="trend-bar" style="width:80%;background:var(--r)"></div></div>
+                <span class="trend-val val-r">447bps</span>
+              </div>
+              <div class="trend-row">
+                <span class="trend-label">current</span>
+                <div class="trend-bar-wrap"><div class="trend-bar" style="width:65%;background:var(--o)"></div></div>
+                <span class="trend-val val-o">384bps</span>
+              </div>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            <span class="ent-name">Crusoe Energy</span>
+            <span class="ent-sub">Private · US · GPU Cloud</span>
+          </td>
+          <td><span class="val-o">OAS 428 bps</span><br><span style="font-size:8.5px;color:var(--dim)">Private debt · ~$1.4B</span></td>
+          <td><span class="val-r">CCC+</span><br><span style="font-size:8px;color:var(--r)">↓ Neg Outlook</span></td>
+          <td>
+            <div class="trend-cell">
+              <div class="trend-row">
+                <span class="trend-label">6mo ago</span>
+                <div class="trend-bar-wrap"><div class="trend-bar" style="width:58%;background:var(--o)"></div></div>
+                <span class="trend-val val-o">311bps</span>
+              </div>
+              <div class="trend-row">
+                <span class="trend-label">current</span>
+                <div class="trend-bar-wrap"><div class="trend-bar" style="width:82%;background:var(--r)"></div></div>
+                <span class="trend-val val-r">428bps</span>
+              </div>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            <span class="ent-name">Lambda Labs</span>
+            <span class="ent-sub">Private · US · GPU Cloud</span>
+          </td>
+          <td><span class="val-y">OAS 298 bps</span><br><span style="font-size:8.5px;color:var(--dim)">Series D debt covenants</span></td>
+          <td><span class="val-y">B+</span><br><span style="font-size:8px;color:var(--y)">→ Stable</span></td>
+          <td>
+            <div class="trend-cell">
+              <div class="trend-row">
+                <span class="trend-label">6mo ago</span>
+                <div class="trend-bar-wrap"><div class="trend-bar" style="width:44%;background:var(--y)"></div></div>
+                <span class="trend-val val-y">268bps</span>
+              </div>
+              <div class="trend-row">
+                <span class="trend-label">current</span>
+                <div class="trend-bar-wrap"><div class="trend-bar" style="width:50%;background:var(--y)"></div></div>
+                <span class="trend-val val-y">298bps</span>
+              </div>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            <span class="ent-name">Microsoft / Google / Amazon</span>
+            <span class="ent-sub">Public · US · Hyperscaler IG</span>
+          </td>
+          <td><span class="val-g">62–79 bps</span><br><span style="font-size:8.5px;color:var(--dim)">5yr CDS avg · fully decoupled</span></td>
+          <td><span class="val-g">AAA / Aaa</span><br><span style="font-size:8px;color:var(--g)">↑ Stable</span></td>
+          <td>
+            <div class="trend-cell">
+              <div class="trend-row">
+                <span class="trend-label">6mo ago</span>
+                <div class="trend-bar-wrap"><div class="trend-bar" style="width:18%;background:var(--g)"></div></div>
+                <span class="trend-val val-g">58bps</span>
+              </div>
+              <div class="trend-row">
+                <span class="trend-label">current</span>
+                <div class="trend-bar-wrap"><div class="trend-bar" style="width:22%;background:var(--g)"></div></div>
+                <span class="trend-val val-g">71bps</span>
+              </div>
+            </div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="footnote" id="footnoteEl"></div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+
+  // ── WEIGHTS ───────────────────────────────────────────────────────────────
+  const W = { cds: 0.20, hy: 0.40, rv: 0.40 };
+
+  // ── NEUTRAL BASELINES & SCORING RANGES ────────────────────────────────────
+  // Higher score = better (healthier). CDS and HY are inverted (lower bps = better).
+  const ANCHORS = {
+    cds: { neutral: 100, range: 130, invert: true  },  // bps; pre-AI-boom baseline
+    hy:  { neutral: 200, range: 150, invert: true  },  // bps
+    rv:  { neutral: 45,  range: 20,  invert: false }   // deals/mo
+  };
+
+  // ── RAW DATA: 24 months Apr '24 → Mar '26 ─────────────────────────────────
+  const LABELS = [
+    "Apr '24","May '24","Jun '24","Jul '24","Aug '24","Sep '24",
+    "Oct '24","Nov '24","Dec '24","Jan '25","Feb '25","Mar '25",
+    "Apr '25","May '25","Jun '25","Jul '25","Aug '25","Sep '25",
+    "Oct '25","Nov '25","Dec '25","Jan '26","Feb '26","Mar '26"
+  ];
+
+  // ① CoreWeave CDS proxy/OAS (bps) — pre-IPO estimate, ICE post Apr '25
+  const rawCDS = [
+     90,  92,  95,  98, 100, 102,
+    105, 108, 110, 115, 118, 120,
+    142, 148, 155, 168, 182, 196,
+    210, 231, 224, 208, 207, 218
+  ];
+
+  // ② AI HY/IG Spread Premium (bps)
+  const rawHY = [
+    190, 195, 198, 200, 205, 208,
+    210, 215, 218, 220, 225, 230,
+    241, 252, 258, 271, 282, 291,
+    291, 328, 318, 304, 298, 312
+  ];
+
+  // ③ Private AI Round Velocity (Series B+ deals/mo)
+  const rawRV = [
+     48,  50,  52,  54,  53,  51,
+     50,  48,  45,  44,  46,  48,
+     54,  52,  54,  48,  43,  40,
+     38,  33,  35,  34,  33,  31
+  ];
+
+  // ── SCORING FUNCTION ──────────────────────────────────────────────────────
+  function scoreArr(raw, anchor) {
+    return raw.map(v => {
+      const s = (v - anchor.neutral) / anchor.range * 5;
+      const oriented = anchor.invert ? -s : s;
+      return parseFloat(Math.max(-5, Math.min(5, oriented)).toFixed(3));
+    });
+  }
+
+  const sCDS = scoreArr(rawCDS, ANCHORS.cds);
+  const sHY  = scoreArr(rawHY,  ANCHORS.hy);
+  const sRV  = scoreArr(rawRV,  ANCHORS.rv);
+
+  // Weighted composite (raw, unshifted)
+  const rawComp = sCDS.map((c, i) =>
+    parseFloat((W.cds * c + W.hy * sHY[i] + W.rv * sRV[i]).toFixed(3))
+  );
+
+  // Base-shift: Apr '24 = 0
+  const base = rawComp[0];
+  const idx  = rawComp.map(v => parseFloat((v - base).toFixed(2)));
+
+  // ── LIVE SCORE ────────────────────────────────────────────────────────────
+  const latest    = idx[idx.length - 1];
+  const latestStr = (latest >= 0 ? '+' : '') + latest.toFixed(1);
+
+  let statusText, themeColor;
+  if      (latest >=  2.0) { statusText = 'Healthy';            themeColor = '#00d68f'; }
+  else if (latest >=  0.5) { statusText = 'Stable';             themeColor = '#4d9fff'; }
+  else if (latest >=  0.0) { statusText = 'Neutral';            themeColor = '#f5c518'; }
+  else if (latest >= -1.5) { statusText = 'Stressed';           themeColor = '#ff9a3c'; }
+  else if (latest >= -3.0) { statusText = 'Deteriorating';      themeColor = '#ff4d6a'; }
+  else                      { statusText = 'Severely Stressed';  themeColor = '#ff4d6a'; }
+
+  const scoreEl  = document.getElementById('liveScore');
+  const statusEl = document.getElementById('liveStatus');
+  scoreEl.textContent      = latestStr;
+  scoreEl.style.color      = themeColor;
+  statusEl.textContent     = statusText;
+  statusEl.style.color     = themeColor;
+  statusEl.style.borderColor = themeColor;
+
+  // Scale pip: map latest onto 0–100% range of the observed series
+  const idxMin   = Math.min(...idx);
+  const idxMax   = Math.max(...idx);
+  const pipPct   = Math.max(2, Math.min(98, (latest - idxMin) / (idxMax - idxMin) * 100));
+  const pipEl    = document.getElementById('scalePip');
+  pipEl.style.left        = pipPct + '%';
+  pipEl.style.borderColor = themeColor;
+
+  // ── FOOTNOTE ──────────────────────────────────────────────────────────────
+  document.getElementById('footnoteEl').innerHTML =
+    'Composite Stress Index = base-shifted weighted blend: CoreWeave CDS vs. neutral 100bps (20%), ' +
+    'AI HY/IG spread differential vs. neutral 200bps (40%), private Series B+ deal velocity vs. neutral 45 deals/mo (40%). ' +
+    'Each factor scored (raw − neutral) ÷ range × 5, inverted where higher raw = worse, clipped to [−5, +5]. ' +
+    'Base-shifted: Apr \'24 = 0; all subsequent values show cumulative change from that baseline. ' +
+    'Higher index = healthier financing conditions. ' +
+    'CDS quotes: ICE mid-market 5yr senior unsecured; pre-IPO (pre-Apr \'25) values are proxy/OAS estimates. ' +
+    'OAS: Bloomberg TRACE / LCD — indicative only. Ratings: S&amp;P/Moody\'s. ' +
+    'Private round data: PitchBook, Crunchbase. Down-round share = transactions below prior primary round valuation, trailing 60 days. ' +
+    'Capex Inflection Indicator #5.';
+
+  // ── CHART DEFAULTS ────────────────────────────────────────────────────────
+  Chart.defaults.color       = '#6b7a96';
+  Chart.defaults.font.family = "'IBM Plex Mono', monospace";
+  Chart.defaults.font.size   = 10;
+  Chart.defaults.borderColor = '#1e2535';
+  const grid = { color: 'rgba(30,37,53,0.9)', lineWidth: 1 };
+
+  // Plugin: green band above 0, red band below 0, dashed zero line
+  const zeroBandPlugin = {
+    id: 'zeroBand',
+    beforeDraw(chart) {
+      const { ctx, chartArea: ca, scales: { y } } = chart;
+      if (!y || !ca) return;
+      const z = Math.max(ca.top, Math.min(ca.bottom, y.getPixelForValue(0)));
+      ctx.save();
+      // green above zero
+      ctx.fillStyle = 'rgba(0,214,143,0.14)';
+      ctx.fillRect(ca.left, ca.top, ca.right - ca.left, z - ca.top);
+      // red below zero
+      ctx.fillStyle = 'rgba(255,77,106,0.14)';
+      ctx.fillRect(ca.left, z, ca.right - ca.left, ca.bottom - z);
+      // zero line
+      ctx.strokeStyle = 'rgba(255,255,255,0.20)';
+      ctx.lineWidth = 1;
+      ctx.setLineDash([4, 4]);
+      ctx.beginPath();
+      ctx.moveTo(ca.left, z);
+      ctx.lineTo(ca.right, z);
+      ctx.stroke();
+      ctx.restore();
+    }
+  };
+
+  const yPad   = 0.4;
+  const compMin = Math.floor(Math.min(...idx) - yPad);
+  const compMax = Math.ceil(Math.max(...idx)  + yPad);
+
+  // ── COMPOSITE CHART ───────────────────────────────────────────────────────
+  new Chart(document.getElementById('compositeChart'), {
+    type: 'line',
+    plugins: [zeroBandPlugin],
+    data: {
+      labels: LABELS,
+      datasets: [{
+        data: idx,
+        borderColor: '#1c2d45',
+        borderWidth: 2.5,
+        pointRadius: idx.map((_, i) => i === idx.length - 1 ? 7 : 2.5),
+        pointBackgroundColor: idx.map(v => v >= 0 ? '#00d68f' : '#ff4d6a'),
+        pointBorderColor: idx.map((_, i) => i === idx.length - 1 ? '#e8edf5' : 'transparent'),
+        pointBorderWidth: idx.map((_, i) => i === idx.length - 1 ? 2 : 0),
+        tension: 0.35,
+        fill: false
+      }]
+    },
+    options: {
+      responsive: true,
+      animation: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            title: items => LABELS[items[0].dataIndex],
+            label: ctx => {
+              const i = ctx.dataIndex;
+              const sn = v => (v >= 0 ? '+' : '') + v.toFixed(2);
+              return [
+                ` Index : ${sn(idx[i])}`,
+                ` ① CDS  : ${rawCDS[i]}bps  (score ${sn(sCDS[i])})`,
+                ` ② HY   : ${rawHY[i]}bps  (score ${sn(sHY[i])})`,
+                ` ③ RV   : ${rawRV[i]} deals (score ${sn(sRV[i])})`
+              ];
+            }
+          }
+        }
+      },
+      scales: {
+        x: {
+          grid,
+          ticks: {
+            color: '#6b7a96',
+            maxRotation: 0,
+            callback: function (val, i) {
+              // Show every 3rd label to avoid crowding
+              return i % 3 === 0 ? this.getLabelForValue(val) : '';
+            }
+          }
+        },
+        y: {
+          grid,
+          min: compMin,
+          max: compMax,
+          ticks: {
+            color: '#6b7a96',
+            stepSize: 1,
+            callback: v => (v > 0 ? '+' : '') + v.toFixed(0)
+          },
+          title: {
+            display: true,
+            text: "Index (base Apr '24 = 0)",
+            color: '#4a5568',
+            font: { size: 9 }
+          }
+        }
+      }
+    }
+  });
+
+  // ── SPARK CHARTS ──────────────────────────────────────────────────────────
+  const sparkOpts = () => ({
+    responsive: true,
+    maintainAspectRatio: false,
+    animation: false,
+    plugins: { legend: { display: false }, tooltip: { enabled: false } },
+    scales: { x: { display: false }, y: { display: false } },
+    elements: { point: { radius: 0 }, line: { borderWidth: 2, tension: 0.35 } }
+  });
+
+  new Chart(document.getElementById('cdsChart'), {
+    type: 'line',
+    data: {
+      labels: LABELS,
+      datasets: [{ data: rawCDS, borderColor: '#ff4d6a', backgroundColor: 'rgba(255,77,106,0.07)', fill: true }]
+    },
+    options: sparkOpts()
+  });
+
+  new Chart(document.getElementById('spreadChart'), {
+    type: 'line',
+    data: {
+      labels: LABELS,
+      datasets: [{ data: rawHY, borderColor: '#ff9a3c', backgroundColor: 'rgba(255,154,60,0.07)', fill: true }]
+    },
+    options: sparkOpts()
+  });
+
+  new Chart(document.getElementById('roundChart'), {
+    type: 'line',
+    data: {
+      labels: LABELS,
+      datasets: [{ data: rawRV, borderColor: '#f5c518', backgroundColor: 'rgba(245,197,24,0.07)', fill: true }]
+    },
+    options: sparkOpts()
+  });
+
+}); // end DOMContentLoaded
+</script>
+</body>
+</html>
