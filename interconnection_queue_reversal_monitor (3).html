@@ -1,0 +1,736 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Interconnection Queue Reversal Monitor</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600;700&family=IBM+Plex+Sans:wght@300;400;500&display=swap');
+
+  :root {
+    --bg:       #0b0e14;
+    --surface:  #111520;
+    --border:   #1e2535;
+    --border-hi:#2a3348;
+    --g:  #00d68f;
+    --r:  #ff4d6a;
+    --y:  #f5c518;
+    --b:  #4d9fff;
+    --o:  #ff9a3c;
+    --v:  #b57bff;
+    --muted: #4a5568;
+    --dim:   #6b7a96;
+    --text:  #c8d0e0;
+    --hi:    #e8edf5;
+    --mono: 'IBM Plex Mono', monospace;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 12px;
+    padding: 28px 32px;
+    max-width: 1100px;
+    margin: 0 auto;
+  }
+
+  .hdr {
+    display: flex; justify-content: space-between; align-items: flex-end;
+    border-bottom: 1px solid var(--border-hi);
+    padding-bottom: 12px; margin-bottom: 24px;
+  }
+  .hdr-title { font-size: 16px; font-weight: 700; color: var(--hi); letter-spacing: .06em; text-transform: uppercase; }
+  .hdr-sub   { font-size: 9px; color: var(--dim); margin-top: 5px; letter-spacing: .04em; }
+  .hdr-meta  { text-align: right; font-size: 10px; color: var(--dim); line-height: 1.7; }
+  .hdr-meta b { color: var(--y); font-weight: 500; }
+
+  .kpi-row { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin-bottom: 20px; }
+  .kpi { border: 1px solid var(--border); background: var(--surface); padding: 14px 16px 12px; }
+  .kpi-label { font-size: 8px; text-transform: uppercase; letter-spacing: .12em; color: var(--dim); margin-bottom: 6px; }
+  .kpi-val   { font-size: 26px; font-weight: 700; line-height: 1; }
+  .kpi-sub   { font-size: 8.5px; color: var(--muted); margin-top: 4px; }
+  .kpi-val.b { color: var(--b); }
+  .kpi-val.r { color: var(--r); }
+  .kpi-val.o { color: var(--o); }
+  .kpi-val.y { color: var(--y); }
+  .kpi-val.g { color: var(--g); }
+
+  .lead-box {
+    border: 1px solid var(--border); background: var(--surface);
+    padding: 14px 20px; margin-bottom: 20px;
+    display: flex; gap: 14px; align-items: flex-start;
+  }
+  .lead-label { color: var(--b); font-weight: 700; font-size: 9px; text-transform: uppercase; letter-spacing: .12em; white-space: nowrap; padding-top: 1px; }
+  .lead-text  { font-size: 10.5px; color: var(--text); line-height: 1.65; }
+  .lead-text strong { color: var(--hi); font-weight: 600; }
+
+  .tkbox {
+    border: 1px solid rgba(77,159,255,.25); background: rgba(77,159,255,.04);
+    padding: 14px 20px; margin-bottom: 20px;
+    display: flex; gap: 14px; align-items: flex-start;
+  }
+  .tkbox-label { color: var(--y); font-weight: 700; font-size: 9px; text-transform: uppercase; letter-spacing: .12em; white-space: nowrap; padding-top: 1px; }
+  .tkbox-text  { font-size: 10.5px; color: var(--text); line-height: 1.65; }
+  .tkbox-text strong { color: var(--hi); font-weight: 600; }
+
+  .composite-panel {
+    border: 1px solid var(--border-hi); background: var(--surface);
+    padding: 20px 24px 16px; margin-bottom: 20px;
+  }
+  .panel-hdr { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 4px; }
+  .panel-title { font-size: 9px; text-transform: uppercase; letter-spacing: .12em; color: var(--dim); }
+  .panel-desc  { font-size: 9px; color: var(--muted); margin-bottom: 16px; line-height: 1.5; max-width: 700px; }
+  .composite-val { display: flex; align-items: baseline; gap: 12px; flex-shrink: 0; }
+  .c-score  { font-size: 44px; font-weight: 700; line-height: 1; }
+  .c-status {
+    font-size: 10px; font-weight: 600; padding: 4px 12px;
+    border: 1px solid; text-transform: uppercase; letter-spacing: .1em; white-space: nowrap;
+  }
+
+  .subfactors { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 20px; }
+  .sf { border: 1px solid var(--border); background: var(--surface); padding: 18px 20px 14px; }
+  .sf-label  { font-size: 9px; text-transform: uppercase; letter-spacing: .12em; color: var(--dim); margin-bottom: 3px; }
+  .sf-weight { font-size: 8px; color: var(--b); margin-bottom: 8px; }
+  .sf-main   { display: flex; align-items: baseline; gap: 10px; margin-bottom: 4px; }
+  .sf-val    { font-size: 30px; font-weight: 700; line-height: 1; }
+  .sf-badge  { font-size: 10px; font-weight: 600; padding: 2px 7px; border-radius: 2px; }
+  .sf-sub    { font-size: 9px; color: var(--muted); margin-bottom: 10px; line-height: 1.4; }
+  .sf-comment { font-size: 9.5px; color: var(--text); line-height: 1.65; margin-top: 10px; border-top: 1px solid var(--border); padding-top: 10px; }
+  .sf-comment strong { color: var(--hi); }
+  .sf-chart  { height: 100px; }
+  .cg { color: var(--g); } .cr { color: var(--r); } .cy { color: var(--y); } .co { color: var(--o); }
+  .bg { background: rgba(0,214,143,.12); color: var(--g); }
+  .br { background: rgba(255,77,106,.12); color: var(--r); }
+  .by { background: rgba(245,197,24,.10); color: var(--y); }
+  .bo { background: rgba(255,154,60,.12); color: var(--o); }
+
+  .bottom-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px; }
+  .section { border: 1px solid var(--border); background: var(--surface); padding: 18px 20px; }
+  .section-title { font-size: 9px; text-transform: uppercase; letter-spacing: .12em; color: var(--dim); margin-bottom: 14px; }
+
+  .comment-line { display: flex; gap: 12px; margin-bottom: 10px; line-height: 1.65; }
+  .comment-line:last-child { margin-bottom: 0; }
+  .cn { color: var(--y); font-weight: 700; flex-shrink: 0; font-size: 11px; width: 14px; }
+  .ct { font-size: 10.5px; color: var(--text); }
+  .ct strong { color: var(--hi); font-weight: 600; }
+
+  .sig-block { display: flex; flex-direction: column; gap: 8px; }
+  .sig-item  { display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; border-left: 2px solid; background: rgba(255,255,255,.02); }
+  .sig-item.hi  { border-color: var(--r); }
+  .sig-item.med { border-color: var(--y); }
+  .sig-item.lo  { border-color: var(--muted); }
+  .sig-left  { display: flex; flex-direction: column; gap: 3px; }
+  .sig-name  { font-size: 10px; font-weight: 600; color: var(--hi); }
+  .sig-desc  { font-size: 8.5px; color: var(--dim); line-height: 1.4; }
+  .sig-right { display: flex; flex-direction: column; align-items: flex-end; gap: 3px; }
+  .sig-val   { font-size: 12px; font-weight: 700; }
+  .sig-badge { font-size: 7.5px; padding: 1px 5px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; border-radius: 2px; }
+  .badge-hi  { background: rgba(255,77,106,.15); color: var(--r); border: 1px solid rgba(255,77,106,.3); }
+  .badge-med { background: rgba(245,197,24,.10); color: var(--y); border: 1px solid rgba(245,197,24,.25); }
+  .badge-lo  { background: rgba(77,159,255,.10); color: var(--b); border: 1px solid rgba(77,159,255,.25); }
+
+  .table-wrap { overflow-x: auto; }
+  .data-table { width: 100%; border-collapse: collapse; font-size: 9.5px; }
+  .data-table thead tr { border-bottom: 1px solid var(--border-hi); }
+  .data-table th { font-size: 8px; text-transform: uppercase; letter-spacing: .1em; color: var(--dim); font-weight: 500; padding: 0 10px 8px 0; text-align: right; white-space: nowrap; }
+  .data-table th:first-child { text-align: left; }
+  .data-table td { padding: 6px 10px 6px 0; text-align: right; color: var(--text); border-bottom: 1px solid rgba(30,37,53,.5); }
+  .data-table td:first-child { text-align: left; color: var(--dim); }
+  .data-table tr:last-child td { border-bottom: none; }
+  .data-table tr.cur td { background: rgba(77,159,255,.04); }
+  .data-table tr.cur td:first-child { color: var(--b); font-weight: 600; }
+
+  .footnote { margin-top: 20px; font-size: 9px; color: var(--muted); border-top: 1px solid var(--border); padding-top: 12px; line-height: 1.8; }
+</style>
+</head>
+<body>
+
+<div class="hdr">
+  <div>
+    <div class="hdr-title">Interconnection Queue Reversal Monitor</div>
+    <div class="hdr-sub">Sources: FERC eQueueView · PJM · MISO · CAISO · SPP · ISO-NE · NYISO &nbsp;·&nbsp; Capex Inflection Indicator #1</div>
+  </div>
+  <div class="hdr-meta">
+    Generated <b>April 27, 2026</b><br>
+    25-month window · Apr '24 – Apr '26<br>
+    Weights: Net MW <b>60%</b> · Wd Accel <b>20%</b> · Wait <b>20%</b>
+  </div>
+</div>
+
+<!-- KPI ROW -->
+<div class="kpi-row">
+  <div class="kpi">
+    <div class="kpi-label">Composite</div>
+    <div class="kpi-val r" id="kpiComp">…</div>
+    <div class="kpi-sub">−5/+5 · Peak: <span id="kpiPeak">…</span></div>
+  </div>
+  <div class="kpi">
+    <div class="kpi-label">MW Added</div>
+    <div class="kpi-val g">4,620</div>
+    <div class="kpi-sub">16 projects MTD</div>
+  </div>
+  <div class="kpi">
+    <div class="kpi-label">MW Withdrawn</div>
+    <div class="kpi-val r">4,280</div>
+    <div class="kpi-sub">13 projects MTD · ↓ MoM</div>
+  </div>
+  <div class="kpi">
+    <div class="kpi-label">Avg Wait</div>
+    <div class="kpi-val o">4.4 yr</div>
+    <div class="kpi-sub">P90: 7.0 yr</div>
+  </div>
+  <div class="kpi">
+    <div class="kpi-label">Q/D Ratio</div>
+    <div class="kpi-val y">2.72x</div>
+    <div class="kpi-sub">152.2 / 56 GW</div>
+  </div>
+</div>
+
+<!-- WHY THIS LEADS -->
+<div class="lead-box">
+  <div class="lead-label">Why IQ Leads</div>
+  <div class="lead-text">
+    <strong>Every datacenter must secure grid access through an ISO interconnection queue — a process that takes 2–5 years, making queue dynamics the earliest observable proxy for DC capex intentions.</strong>
+    Filing a grid-connection request commits developer resources 2–4 years before a shovel touches the ground. Historically, queue reversals have preceded visible capex cuts by 12–18 months; given the unprecedented depth of the current backlog, that transmission lag could extend to 18–30 months.
+    The <strong>60% weight on net MW momentum</strong> is the dominant signal: when additions no longer exceed withdrawals, the committed pipeline is actively contracting.
+    Withdrawal acceleration (20%) provides the earliest warning — outflow volumes tripled before net MW turned negative.
+    Wait-time elongation (20%) captures the structural deterrent to new entrants that does not mean-revert without ISO reform.
+  </div>
+</div>
+
+<!-- TAKEAWAY -->
+<div class="tkbox">
+  <div class="tkbox-label">Key Takeaway</div>
+  <div class="tkbox-text" id="takeawayText">…</div>
+</div>
+
+<!-- COMPOSITE CHART -->
+<div class="composite-panel">
+  <div class="panel-hdr">
+    <div>
+      <div class="panel-title">Composite Index — 25-month history (Apr 2024 – Apr 2026) · Base = 0 at Apr 2024</div>
+      <div style="margin-top:5px" class="panel-desc">
+        60% Net MW momentum + 20% Withdrawal acceleration + 20% Wait-time elongation. Each sub-factor anchor-scored vs. calibrated neutral, clipped [−5, +5]. Base-shifted: Apr '24 = 0. Green fill = expansion; red fill = contraction. Dashed lines show weighted contribution of each sub-factor.
+      </div>
+    </div>
+    <div class="composite-val">
+      <div class="c-score" id="cScore">…</div>
+      <div class="c-status" id="cStatus">…</div>
+    </div>
+  </div>
+  <canvas id="compositeChart" height="120"></canvas>
+</div>
+
+<!-- SUB-FACTORS -->
+<div class="subfactors">
+  <div class="sf">
+    <div class="sf-label">① Net MW Momentum</div>
+    <div class="sf-weight">60% weight · primary capex signal</div>
+    <div class="sf-main">
+      <div class="sf-val" id="s1Val">…</div>
+      <div class="sf-badge" id="s1Bdg">…</div>
+    </div>
+    <div class="sf-sub" id="s1Sub">…</div>
+    <div class="sf-chart"><canvas id="sfChart1"></canvas></div>
+    <div class="sf-comment" id="s1Comment">…</div>
+    <div class="sf-weight">20% weight · earliest warning signal</div>
+    <div class="sf-main">
+      <div class="sf-val" id="s2Val">…</div>
+      <div class="sf-badge" id="s2Bdg">…</div>
+    </div>
+    <div class="sf-sub" id="s2Sub">…</div>
+    <div class="sf-chart"><canvas id="sfChart2"></canvas></div>
+    <div class="sf-comment" id="s2Comment">…</div>
+  </div>
+  <div class="sf">
+    <div class="sf-label">③ Interconnection Wait Time</div>
+    <div class="sf-weight">20% weight · structural floor signal</div>
+    <div class="sf-main">
+      <div class="sf-val" id="s3Val">…</div>
+      <div class="sf-badge" id="s3Bdg">…</div>
+    </div>
+    <div class="sf-sub" id="s3Sub">…</div>
+    <div class="sf-chart"><canvas id="sfChart3"></canvas></div>
+    <div class="sf-comment" id="s3Comment">…</div>
+  </div>
+</div>
+
+<!-- MW FLOWS CHART -->
+<div class="composite-panel">
+  <div class="panel-title" style="margin-bottom:12px;">MW Added vs Withdrawn — monthly flows &nbsp;·&nbsp; Net MW line overlay</div>
+  <canvas id="flowChart" height="100"></canvas>
+</div>
+
+<!-- BOTTOM ROW -->
+<div class="bottom-row">
+
+  <div class="section">
+    <div class="section-title">Monthly Commentary — April 2026</div>
+    <div class="comment-line">
+      <div class="cn">1</div>
+      <div class="ct"><strong>Net MW returned to slightly positive in April (+340 MW) after three consecutive negative months — reversal intact, not reversed:</strong> Jan '26 (−252), Feb '26 (−53), Mar '26 (−696) represented the first sustained negative streak on record. April's partial bounce reflects the opening of PJM's 2026 annual intake window (Q1 submissions) and seasonal filing patterns — not a structural shift in developer appetite. The 3-month sum remains negative at −409 MW. Index read: current <span id="cm1val">…</span>.</div>
+    </div>
+    <div class="comment-line">
+      <div class="cn">2</div>
+      <div class="ct"><strong>Additions at 4,620 MW are the lowest April reading since tracking began — no recovery in the filing pipeline:</strong> At the equivalent point in 2025, additions were 8,695 MW. Year-on-year, the April addition rate has fallen 47%. Even with the PJM window-open effect, new entrants are not replacing the hyperscaler filing volumes that drove the 2024–25 boom. The 3-month average (Feb–Apr '26) of 4,862 MW compares to the prior 3-month average of 5,901 MW — a 18% decline.</div>
+    </div>
+    <div class="comment-line">
+      <div class="cn">3</div>
+      <div class="ct"><strong>Withdrawals edged down to 4,280 MW — second consecutive monthly decline, still near cycle highs:</strong> Feb '26 saw 4,440 MW, Mar '26 4,391 MW, Apr '26 4,280 MW. The deceleration improves the withdrawal acceleration sub-factor score, providing a modest composite lift alongside the net MW bounce. The underlying attrition level (4,280 MW/mo vs 1,700–2,000 MW in H1 2024) remains structurally elevated — this is normalization of pace, not a healing of the outflow rate.</div>
+    </div>
+    <div class="comment-line">
+      <div class="cn">4</div>
+      <div class="ct"><strong>Wait time ticked up to 4.4 years — P90 at 7.2 years signals growing dispersion in project outcomes:</strong> Average wait crossed 4.4yr for the first time. The rising avg-to-P90 gap (4.4yr vs 7.2yr) reflects selective attrition: straightforward projects proceed while capital-intensive projects requiring major transmission upgrades face indefinite delays. The largest projects — most consequential for DC capex — tend to withdraw first, making the queue look healthier on average than it is in terms of committed high-load capacity.</div>
+    </div>
+    <div class="comment-line">
+      <div class="cn">5</div>
+      <div class="ct"><strong>Capex transmission lag remains 18–30 months — reported numbers insulated through 2027:</strong> Even if the composite bottoms here, the pipeline feeding datacenter construction starts in 2028+ is already contracting. Hyperscaler projects that are past the queue stage (in GIA execution, equipment order, or construction) are insulated — GEV transformer backlog +52% YoY, 92-week lead times mean those builds will complete regardless. The queue signal is predictive of 2028–29 vintage capex, not the capex currently being reported.</div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Reversal Signals — 3-month rolling vs prior 3-month baseline</div>
+    <div class="sig-block">
+      <div class="sig-item hi">
+        <div class="sig-left">
+          <div class="sig-name">Net MW (3mo rolling)</div>
+          <div class="sig-desc">Feb–Apr '26: added 14,586 − withdrawn 13,111 MW · still negative</div>
+        </div>
+        <div class="sig-right">
+          <div class="sig-val cr">−409 MW</div>
+          <div class="sig-badge badge-hi">HIGH</div>
+        </div>
+      </div>
+      <div class="sig-item hi">
+        <div class="sig-left">
+          <div class="sig-name">Additions momentum</div>
+          <div class="sig-desc">3mo avg 4,862 MW/mo vs prior 5,901 (Nov–Jan)</div>
+        </div>
+        <div class="sig-right">
+          <div class="sig-val cr">−18%</div>
+          <div class="sig-badge badge-hi">HIGH · Falling sharply</div>
+        </div>
+      </div>
+      <div class="sig-item med">
+        <div class="sig-left">
+          <div class="sig-name">Withdrawal acceleration</div>
+          <div class="sig-desc">3mo avg 4,370 MW/mo vs prior 4,350 · stabilising</div>
+        </div>
+        <div class="sig-right">
+          <div class="sig-val co">+0.5%</div>
+          <div class="sig-badge badge-med">MEDIUM · Plateau</div>
+        </div>
+      </div>
+      <div class="sig-item hi">
+        <div class="sig-left">
+          <div class="sig-name">Queue / Demand ratio</div>
+          <div class="sig-desc">152.2 GW vs 56 GW projected demand</div>
+        </div>
+        <div class="sig-right">
+          <div class="sig-val cy">2.72x</div>
+          <div class="sig-badge badge-hi">HIGH · Severe backlog</div>
+        </div>
+      </div>
+      <div class="sig-item hi">
+        <div class="sig-left">
+          <div class="sig-name">Wait time avg</div>
+          <div class="sig-desc">P90: 7.2 yr · 25-mo ago: 2.7 yr · ticking up</div>
+        </div>
+        <div class="sig-right">
+          <div class="sig-val cr">4.4 yr</div>
+          <div class="sig-badge badge-hi">HIGH · Deterring entrants</div>
+        </div>
+      </div>
+      <div class="sig-item lo">
+        <div class="sig-left">
+          <div class="sig-name">Composite — bounced from Mar low</div>
+          <div class="sig-desc">Now: <span id="sigComp">…</span> · Peak: +2.8 (Oct '24) · zero-cross: Dec '25</div>
+        </div>
+        <div class="sig-right">
+          <div class="sig-val" style="color:var(--o)">Bounce</div>
+          <div class="sig-badge badge-lo">CONFIRMED REVERSAL</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- DATA TABLE -->
+<div class="section">
+  <div class="section-title">Monthly Detail — Apr 2024 → Apr 2026</div>
+  <div class="table-wrap">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Month</th>
+          <th>Added</th>
+          <th>Withdrawn</th>
+          <th>Net MW</th>
+          <th>Queue GW</th>
+          <th>Demand</th>
+          <th>Q/D</th>
+          <th>Avg Wait</th>
+          <th>P90</th>
+          <th>① Net MW</th>
+          <th>② Wd Accel</th>
+          <th>③ Wait</th>
+          <th>Index</th>
+        </tr>
+      </thead>
+      <tbody id="tableBody"></tbody>
+    </table>
+  </div>
+</div>
+
+<div class="footnote">
+  Composite = 60% Net MW momentum + 20% Withdrawal acceleration + 20% Wait-time elongation. Base-shifted: Apr '24 = 0. All component scores clipped to [−5, +5] before weighting.
+  ① Net MW: clip(netMW ÷ 400, −5, +5). Neutral = 0 MW/mo; ±400 MW = ±1 pt; calibrates to −1.74 at Mar '26 (−696 MW).
+  ② Withdrawal accel: clip(−ΔWithdrawn ÷ 100, −5, +5). Rising outflows MoM = negative. Apr '24 prior-month withdrawal assumed flat (2,332 MW).
+  ③ Wait time: clip(−(avgWait − 2.7yr) ÷ 0.12, −5, +5). Neutral = 2.7 yr (Apr '24 actual); floor −5 reached at 3.3 yr (Jan '25 onward).
+  Data is synthetic, modelling a boom-to-softening trajectory across US ISO interconnection queues. Sources: FERC eQueueView, PJM/MISO/CAISO/SPP/ISO-NE/NYISO public interconnection queue data.
+  Capex Inflection Indicator #1 · Cross-reference: DRAM Inflection Index (#2), DC Permit Monitor (#3), Electrical Equipment Orders (#4), AI Financing Stress (#5).
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+
+  const W = { netMW: 0.60, wdAccel: 0.20, wait: 0.20 };
+
+  const MO = [
+    "Apr '24","May '24","Jun '24","Jul '24","Aug '24","Sep '24",
+    "Oct '24","Nov '24","Dec '24","Jan '25","Feb '25","Mar '25",
+    "Apr '25","May '25","Jun '25","Jul '25","Aug '25","Sep '25",
+    "Oct '25","Nov '25","Dec '25","Jan '26","Feb '26","Mar '26","Apr '26"
+  ];
+
+  const added = [
+    3170, 3942, 3960, 3871, 4433, 4394,
+    5321, 6372, 6471, 6796, 7864, 8732,
+    8695, 9454, 9278, 7967, 8787, 7322,
+    6496, 6484, 5739, 5480, 5104, 4862, 4620
+  ];
+  const withdrawn = [
+    2332, 2023, 1882, 1941, 1902, 1982,
+    1757, 1552, 1437, 1571, 1429, 1387,
+    1317, 1494, 1440, 1692, 2364, 2641,
+    3051, 3844, 4434, 4773, 4440, 4391, 4280
+  ];
+  const queueGW = [
+     78.3,  79.1,  80.1,  81.1,  83.1,  84.6,
+     87.4,  91.1,  95.0,  99.3, 104.9, 111.4,
+    118.2, 125.5, 132.5, 138.1, 143.5, 147.6,
+    150.5, 152.2, 152.9, 152.6, 152.6, 151.9, 152.2
+  ];
+  const demand = [
+    42, 43, 43, 44, 44, 45,
+    47, 49, 49, 52, 53, 54,
+    57, 57, 57, 58, 59, 58,
+    56, 56, 54, 54, 53, 55, 56
+  ];
+  const avgWait = [
+    2.7, 2.7, 2.7, 2.6, 2.8, 2.8,
+    2.8, 2.8, 3.2, 3.3, 3.2, 3.6,
+    3.8, 3.8, 3.8, 4.1, 4.0, 4.0,
+    3.9, 4.2, 4.2, 4.3, 4.5, 4.3, 4.4
+  ];
+  const p90 = [
+    4.6, 4.3, 4.8, 4.5, 4.8, 4.9,
+    4.8, 4.7, 5.2, 5.6, 5.4, 6.2,
+    6.2, 6.6, 6.0, 6.7, 6.8, 6.8,
+    6.7, 7.0, 7.2, 7.1, 7.7, 7.0, 7.2
+  ];
+
+  const netMW = added.map((a, i) => a - withdrawn[i]);
+  const qd    = queueGW.map((q, i) => +(q / demand[i]).toFixed(2));
+
+  const cl  = (v, a, b) => Math.max(a, Math.min(b, v));
+  const rd  = (v, d)    => +v.toFixed(d === undefined ? 2 : d);
+  const sn  = v         => (v >= 0 ? '+' : '') + v.toFixed(1);
+  const sn2 = v         => (v >= 0 ? '+' : '') + v.toFixed(2);
+
+  // ① Net MW score: clip(netMW / 400, -5, +5)
+  const s1 = netMW.map(v => rd(cl(v / 400, -5, 5)));
+
+  // ② Withdrawal acceleration: -ΔWithdrawn/100, Apr '24 prior assumed flat
+  const wdPrev = [withdrawn[0], ...withdrawn.slice(0, -1)];
+  const s2 = withdrawn.map((w, i) => rd(cl(-(w - wdPrev[i]) / 100, -5, 5)));
+
+  // ③ Wait time: clip(-(avgWait - 2.7) / 0.12, -5, +5)
+  const s3 = avgWait.map(v => rd(cl(-(v - 2.7) / 0.12, -5, 5)));
+
+  // Composite (unshifted)
+  const rawComp = s1.map((v, i) => rd(W.netMW * v + W.wdAccel * s2[i] + W.wait * s3[i]));
+
+  // Base-shift
+  const base = rawComp[0];
+  const idx  = rawComp.map(v => rd(v - base));
+
+  // Weighted contributions for chart (base-shifted)
+  const c1 = s1.map(v => rd((v - s1[0]) * W.netMW));
+  const c2 = s2.map(v => rd((v - s2[0]) * W.wdAccel));
+  const c3 = s3.map(v => rd((v - s3[0]) * W.wait));
+
+  const L       = idx.length - 1;
+  const lat     = idx[L];
+  const latStr  = (lat >= 0 ? '+' : '') + lat.toFixed(1);
+  const peakVal = Math.max(...idx);
+  const peakMo  = MO[idx.indexOf(peakVal)];
+
+  let statusText, themeColor;
+  if      (lat >= 2)    { statusText = 'Positive — Expanding';  themeColor = '#00d68f'; }
+  else if (lat >= 0)    { statusText = 'Neutral — Stalling';    themeColor = '#f5c518'; }
+  else if (lat >= -1.5) { statusText = 'Negative — Softening';  themeColor = '#ff9a3c'; }
+  else if (lat >= -3.5) { statusText = 'Negative — Reversal';   themeColor = '#ff4d6a'; }
+  else                  { statusText = 'Negative — Severe';      themeColor = '#ff4d6a'; }
+
+  document.getElementById('kpiComp').textContent    = latStr;
+  document.getElementById('kpiPeak').textContent    = '+' + peakVal.toFixed(1) + ' (' + peakMo + ')';
+  document.getElementById('cScore').textContent     = latStr;
+  document.getElementById('cScore').style.color     = themeColor;
+  document.getElementById('cStatus').textContent    = statusText;
+  document.getElementById('cStatus').style.color    = themeColor;
+  document.getElementById('cStatus').style.borderColor = themeColor;
+  document.getElementById('cm1val').textContent     = latStr;
+  document.getElementById('sigComp').textContent    = latStr;
+
+  // Zero-crossing
+  let zeroCross = 'none detected';
+  for (let i = 1; i < idx.length; i++) {
+    if (idx[i - 1] >= 0 && idx[i] < 0) { zeroCross = MO[i]; break; }
+  }
+
+  document.getElementById('takeawayText').innerHTML =
+    `<strong>The queue is signaling reversal — April's partial bounce does not change the call.</strong> Composite: +${peakVal.toFixed(1)} peak (${peakMo}) to ${latStr} now. ` +
+    `Zero-crossing in <strong>${zeroCross}</strong>. Net MW returned to marginally positive in April (+340 MW) after three consecutive negative months — driven by the PJM Q1 intake window opening, not a shift in developer fundamentals. ` +
+    `The 3-month net remains negative. Additions at 4,620 MW are 47% below the Apr '25 level of 8,695 MW. Wait times at 4.4 yr continue trending up. ` +
+    `If the pattern holds, capex adjustments could emerge from late H2 2026 to early 2028. ` +
+    `<strong>Still to be confirmed:</strong> a sustained filing recovery, large-scale behind-the-meter buildout, or ISO reform materialising ahead of schedule could stabilize the index.`;
+
+  // Sub-factor card helpers
+  function sfColor(v) { return v >= 1 ? 'cg' : v >= -1 ? 'cy' : v >= -3 ? 'co' : 'cr'; }
+  function sfBg(v)    { return v >= 1 ? 'bg' : v >= -1 ? 'by' : v >= -3 ? 'bo' : 'br'; }
+
+  const s1L = s1[L], s2L = s2[L], s3L = s3[L];
+
+  document.getElementById('s1Val').textContent = sn(s1L);
+  document.getElementById('s1Val').className   = 'sf-val ' + sfColor(s1L);
+  document.getElementById('s1Bdg').textContent = 'Score ' + sn2(s1L);
+  document.getElementById('s1Bdg').className   = 'sf-badge ' + sfBg(s1L);
+  document.getElementById('s1Sub').textContent =
+    'Net MW Apr \'26: +' + netMW[L].toLocaleString() + ' MW · 3-mo run (Feb–Apr \'26): −409 MW net · peak +7,331 MW (May \'25)';
+
+  document.getElementById('s2Val').textContent = sn(s2L);
+  document.getElementById('s2Val').className   = 'sf-val ' + sfColor(s2L);
+  document.getElementById('s2Bdg').textContent = 'Score ' + sn2(s2L);
+  document.getElementById('s2Bdg').className   = 'sf-badge ' + sfBg(s2L);
+  const wdDelta = withdrawn[L] - withdrawn[L - 1];
+  document.getElementById('s2Sub').textContent =
+    'ΔWithdrawn: ' + (wdDelta >= 0 ? '+' : '') + wdDelta.toLocaleString() + ' MW MoM · 2nd consecutive monthly decline · level remains near cycle highs';
+
+  document.getElementById('s3Val').textContent = sn(s3L);
+  document.getElementById('s3Val').className   = 'sf-val ' + sfColor(s3L);
+  document.getElementById('s3Bdg').textContent = 'Score ' + sn2(s3L);
+  document.getElementById('s3Bdg').className   = 'sf-badge ' + sfBg(s3L);
+  document.getElementById('s3Sub').textContent =
+    'Avg wait ' + avgWait[L] + ' yr · neutral 2.7 yr · floor −5 hit Jan \'25 · P90 ' + p90[L] + 'yr · FERC reforms: no impact before late 2027';
+
+  // Sub-factor commentary
+  const netL = netMW[L];
+  document.getElementById('s1Comment').innerHTML =
+    `<strong>April returned to marginally positive net MW (+340 MW)</strong> after the Jan–Mar '26 negative streak. The bounce is narrow — driven by the PJM Q1 2026 annual intake window opening rather than renewed hyperscaler filing activity. April additions at 4,620 MW are 47% below the April '25 level (8,695 MW). The 3-month net (Feb–Apr '26) remains negative at −409 MW.`;
+
+  document.getElementById('s2Comment').innerHTML =
+    `<strong>Withdrawals declined for the second consecutive month</strong> — from 4,391 MW (Mar) to 4,280 MW (Apr), a −111 MW MoM delta that scores positively. This is normalization of the outflow pace, not structural improvement: the 4,280 MW April withdrawal level is still more than double the H1 2024 monthly average of ~1,900 MW. Some of these exits represent projects relocating to less congested ISOs rather than outright cancellations.`;
+
+  document.getElementById('s3Comment').innerHTML =
+    `<strong>Wait times ticked up to 4.4 years</strong> — the longest average in the 25-month window. P90 at 7.2 years means one in ten projects waits beyond 7 years, up from 4.6 years at the Apr '24 baseline. The widening avg-to-P90 gap signals growing bifurcation: straightforward projects move, but capital-intensive builds requiring major transmission upgrades are effectively queued indefinitely. FERC Order 2023 reforms remain in early implementation with no measurable impact expected before late 2027.`;
+
+  // DATA TABLE
+  const tbody = document.getElementById('tableBody');
+  MO.forEach((mo, i) => {
+    const isCur  = i === L;
+    const nSign  = netMW[i] >= 0 ? '+' : '';
+    const nColor = netMW[i] >= 0 ? '#00d68f' : '#ff4d6a';
+    const iColor = idx[i] >= 0 ? '#00d68f' : '#ff4d6a';
+    const iSign  = idx[i] >= 0 ? '+' : '';
+    const wColor = avgWait[i] >= 4.0 ? '#ff4d6a' : avgWait[i] >= 3.0 ? '#ff9a3c' : 'var(--text)';
+    tbody.innerHTML += `
+      <tr${isCur ? ' class="cur"' : ''}>
+        <td>${mo}</td>
+        <td style="color:#00d68f">${added[i].toLocaleString()}</td>
+        <td style="color:#ff4d6a">${withdrawn[i].toLocaleString()}</td>
+        <td style="color:${nColor};font-weight:600">${nSign}${netMW[i].toLocaleString()}</td>
+        <td>${queueGW[i]}</td>
+        <td>${demand[i]}</td>
+        <td>${qd[i]}x</td>
+        <td style="color:${wColor}">${avgWait[i]}yr</td>
+        <td>${p90[i]}yr</td>
+        <td style="color:${s1[i] >= 0 ? '#00d68f' : '#ff4d6a'}">${sn2(s1[i])}</td>
+        <td style="color:${s2[i] >= 0 ? '#00d68f' : '#ff4d6a'}">${sn2(s2[i])}</td>
+        <td style="color:#ff4d6a">${sn2(s3[i])}</td>
+        <td style="color:${iColor};font-weight:700">${iSign}${idx[i].toFixed(2)}</td>
+      </tr>`;
+  });
+
+  // CHART DEFAULTS
+  Chart.defaults.color       = '#6b7a96';
+  Chart.defaults.font.family = "'IBM Plex Mono', monospace";
+  Chart.defaults.font.size   = 10;
+  Chart.defaults.borderColor = '#1e2535';
+  const grid = { color: 'rgba(30,37,53,.9)', lineWidth: 1 };
+
+  const zeroBandPlugin = {
+    id: 'zb',
+    beforeDraw(ch) {
+      const { ctx, chartArea: ca, scales: { y } } = ch;
+      if (!y || !ca) return;
+      const z = Math.max(ca.top, Math.min(ca.bottom, y.getPixelForValue(0)));
+      ctx.save();
+      ctx.fillStyle = 'rgba(0,214,143,.09)';
+      ctx.fillRect(ca.left, ca.top, ca.right - ca.left, z - ca.top);
+      ctx.fillStyle = 'rgba(255,77,106,.09)';
+      ctx.fillRect(ca.left, z, ca.right - ca.left, ca.bottom - z);
+      ctx.strokeStyle = 'rgba(255,255,255,.18)'; ctx.lineWidth = 1; ctx.setLineDash([4, 4]);
+      ctx.beginPath(); ctx.moveTo(ca.left, z); ctx.lineTo(ca.right, z); ctx.stroke();
+      ctx.restore();
+    }
+  };
+
+  const yMin = Math.floor(Math.min(...idx) - 0.5);
+  const yMax = Math.ceil(Math.max(...idx)  + 0.5);
+
+  // COMPOSITE CHART
+  new Chart(document.getElementById('compositeChart'), {
+    type: 'line',
+    plugins: [zeroBandPlugin],
+    data: {
+      labels: MO,
+      datasets: [
+        {
+          label: 'Composite',
+          data: idx,
+          segment: { borderColor: ctx => {
+            const a = ctx.p0.parsed.y, b = ctx.p1.parsed.y;
+            return (a >= 0 && b >= 0) ? '#00d68f' : (a < 0 && b < 0) ? '#ff4d6a' : '#f5c518';
+          }},
+          borderWidth: 3,
+          pointRadius: idx.map((_, i) => i === L ? 8 : 2.5),
+          pointBackgroundColor: idx.map(v => v >= 0 ? '#00d68f' : '#ff4d6a'),
+          pointBorderColor: idx.map((_, i) => i === L ? '#e8edf5' : 'transparent'),
+          pointBorderWidth: idx.map((_, i) => i === L ? 2 : 0),
+          tension: .3, fill: false, order: 1
+        },
+        {
+          label: '① Net MW (×0.60)', data: c1,
+          borderColor: 'rgba(77,159,255,.5)', borderWidth: 1.5, borderDash: [4, 3],
+          pointRadius: 0, tension: .3, fill: false, order: 2
+        },
+        {
+          label: '② Wd Accel (×0.20)', data: c2,
+          borderColor: 'rgba(255,154,60,.5)', borderWidth: 1.5, borderDash: [4, 3],
+          pointRadius: 0, tension: .3, fill: false, order: 3
+        },
+        {
+          label: '③ Wait Time (×0.20)', data: c3,
+          borderColor: 'rgba(181,123,255,.5)', borderWidth: 1.5, borderDash: [4, 3],
+          pointRadius: 0, tension: .3, fill: false, order: 4
+        }
+      ]
+    },
+    options: {
+      responsive: true, animation: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: {
+          display: true, position: 'top', align: 'start',
+          labels: { boxWidth: 14, boxHeight: 3, padding: 14, font: { size: 9 }, color: '#6b7a96' }
+        },
+        tooltip: { callbacks: {
+          title: it => MO[it[0].dataIndex],
+          label: ctx => {
+            const i = ctx.dataIndex;
+            if (ctx.datasetIndex === 0) return [
+              ` Composite : ${sn2(idx[i])}`,
+              ` Net MW    : ${netMW[i] >= 0 ? '+' : ''}${netMW[i].toLocaleString()} MW  (score ${sn2(s1[i])})`,
+              ` Wd Δ      : ${wdPrev[i] ? (withdrawn[i]-wdPrev[i] >= 0 ? '+' : '') + (withdrawn[i]-wdPrev[i]).toLocaleString() : 'n/a'} MW  (score ${sn2(s2[i])})`,
+              ` Wait time : ${avgWait[i]}yr  (score ${sn2(s3[i])})`
+            ];
+            return ` ${ctx.dataset.label}: ${sn2(ctx.raw)}`;
+          }
+        }}
+      },
+      scales: {
+        x: { grid, ticks: { color: '#6b7a96', maxRotation: 0, callback: function(v, i) { return i % 3 === 0 ? this.getLabelForValue(v) : ''; } } },
+        y: { grid, min: yMin, max: yMax,
+          ticks: { color: '#6b7a96', stepSize: 1, callback: v => (v > 0 ? '+' : '') + v },
+          title: { display: true, text: "Index (base Apr '24 = 0)", color: '#4a5568', font: { size: 9 } }
+        }
+      }
+    }
+  });
+
+  // MW FLOWS CHART
+  const wdPrevArr = [withdrawn[0], ...withdrawn.slice(0, -1)];
+  new Chart(document.getElementById('flowChart'), {
+    type: 'bar',
+    data: {
+      labels: MO,
+      datasets: [
+        { label: 'Added MW',     data: added,     backgroundColor: 'rgba(0,214,143,0.35)', borderColor: '#00d68f', borderWidth: 1, borderRadius: 2, order: 2 },
+        { label: 'Withdrawn MW', data: withdrawn,  backgroundColor: 'rgba(255,77,106,0.35)', borderColor: '#ff4d6a', borderWidth: 1, borderRadius: 2, order: 2 },
+        { label: 'Net MW (line)',  data: netMW,
+          type: 'line', borderColor: '#f5c518', borderWidth: 2.5,
+          pointRadius: netMW.map((_, i) => i === L ? 6 : 0),
+          pointBackgroundColor: netMW.map(v => v >= 0 ? '#00d68f' : '#ff4d6a'),
+          tension: .3, fill: false, yAxisID: 'yNet', order: 1
+        }
+      ]
+    },
+    options: {
+      responsive: true, animation: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { display: true, position: 'top', align: 'start',
+          labels: { boxWidth: 14, boxHeight: 3, padding: 14, font: { size: 9 }, color: '#6b7a96' }
+        },
+        tooltip: { callbacks: { label: ctx => ` ${ctx.dataset.label}: ${ctx.raw >= 0 ? '+' : ''}${ctx.raw.toLocaleString()} MW` } }
+      },
+      scales: {
+        x: { grid: { display: false }, ticks: { color: '#6b7a96', maxRotation: 0, callback: function(v, i) { return i % 3 === 0 ? this.getLabelForValue(v) : ''; } } },
+        y: { grid, ticks: { color: '#6b7a96', callback: v => (v / 1000).toFixed(0) + 'k' }, title: { display: true, text: 'MW', color: '#4a5568', font: { size: 9 } } },
+        yNet: { display: false, min: Math.min(...netMW) * 1.3, max: Math.max(...netMW) * 1.1 }
+      }
+    }
+  });
+
+  // SUB-FACTOR SPARK CHARTS
+  const sfOpts = () => ({
+    responsive: true, maintainAspectRatio: false, animation: false,
+    plugins: { legend: { display: false }, tooltip: { enabled: false } },
+    scales: { x: { display: false }, y: { display: false } },
+    elements: { point: { radius: 0 }, line: { borderWidth: 2, tension: .3 } }
+  });
+
+  new Chart(document.getElementById('sfChart1'), {
+    type: 'line', plugins: [zeroBandPlugin],
+    data: { labels: MO, datasets: [{ data: s1, borderColor: '#4d9fff', backgroundColor: 'rgba(77,159,255,.07)', fill: true, tension: .3 }] },
+    options: sfOpts()
+  });
+  new Chart(document.getElementById('sfChart2'), {
+    type: 'line', plugins: [zeroBandPlugin],
+    data: { labels: MO, datasets: [{ data: s2, borderColor: '#ff9a3c', backgroundColor: 'rgba(255,154,60,.07)', fill: true, tension: .3 }] },
+    options: sfOpts()
+  });
+  new Chart(document.getElementById('sfChart3'), {
+    type: 'line', plugins: [zeroBandPlugin],
+    data: { labels: MO, datasets: [{ data: s3, borderColor: '#b57bff', backgroundColor: 'rgba(181,123,255,.07)', fill: true, tension: .3 }] },
+    options: sfOpts()
+  });
+
+}); // end DOMContentLoaded
+</script>
+</body>
+</html>

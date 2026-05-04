@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DRAM Inflection Index</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600;700&family=IBM+Plex+Sans:wght@300;400;500&display=swap');
+  :root{--bg:#0b0e14;--surface:#111520;--border:#1e2535;--border-hi:#2a3348;--g:#00d68f;--r:#ff4d6a;--y:#f5c518;--b:#4d9fff;--o:#ff9a3c;--v:#b57bff;--muted:#4a5568;--dim:#6b7a96;--text:#c8d0e0;--hi:#e8edf5;--mono:'IBM Plex Mono',monospace}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--text);font-family:var(--mono);font-size:12px;padding:28px 32px;max-width:1100px;margin:0 auto}
+  .hdr{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:1px solid var(--border-hi);padding-bottom:12px;margin-bottom:24px}
+  .hdr-title{font-size:16px;font-weight:700;color:var(--hi);letter-spacing:.06em;text-transform:uppercase}
+  .hdr-sub{font-size:9px;color:var(--dim);margin-top:5px;letter-spacing:.04em}
+  .hdr-meta{text-align:right;font-size:10px;color:var(--dim);line-height:1.7}
+  .hdr-meta b{color:var(--y);font-weight:500}
+  .ip{border:1px solid var(--border-hi);padding:24px 28px 20px;margin-bottom:20px;position:relative;overflow:hidden}
+  .ip.rg{background:linear-gradient(135deg,rgba(0,214,143,.07) 0%,var(--surface) 70%);border-color:rgba(0,214,143,.25)}
+  .ip.rr{background:linear-gradient(135deg,rgba(255,77,106,.07) 0%,var(--surface) 70%);border-color:rgba(255,77,106,.25)}
+  .ip::before{content:'';position:absolute;top:0;left:0;width:4px;height:100%}
+  .ip.rg::before{background:var(--g)}.ip.rr::before{background:var(--r)}
+  .pt{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px}
+  .ptl{font-size:9px;text-transform:uppercase;letter-spacing:.12em;color:var(--dim)}
+  .pd{font-size:9px;color:var(--muted);margin-bottom:18px;line-height:1.55;max-width:700px}
+  .ivb{display:flex;align-items:baseline;gap:14px;flex-shrink:0}
+  .is{font-size:44px;font-weight:700;line-height:1}
+  .is.pos{color:var(--g)}.is.neg{color:var(--r)}
+  .ir{font-size:10px;font-weight:600;padding:4px 12px;text-transform:uppercase;letter-spacing:.1em;border:1px solid}
+  .ir.pos{color:var(--g);border-color:var(--g)}.ir.neg{color:var(--r);border-color:var(--r)}.ir.warn{color:var(--y);border-color:var(--y)}
+  .lead-box{border:1px solid var(--border);background:var(--surface);padding:14px 20px;margin-bottom:20px;display:flex;gap:14px;align-items:flex-start}
+  .lead-label{color:var(--b);font-weight:700;font-size:9px;text-transform:uppercase;letter-spacing:.12em;white-space:nowrap;padding-top:1px}
+  .lead-text{font-size:10.5px;color:var(--text);line-height:1.65}
+  .lead-text strong{color:var(--hi);font-weight:600}
+  .tp{border:1px solid var(--border-hi);background:var(--surface);padding:18px 22px;margin-bottom:20px}
+  .tt{font-size:9px;text-transform:uppercase;letter-spacing:.12em;color:var(--dim);margin-bottom:14px}
+  .ti{display:flex;gap:12px;margin-bottom:10px;line-height:1.65}.ti:last-child{margin-bottom:0}
+  .tb{font-weight:700;flex-shrink:0;font-size:11px;width:14px}
+  .tx{font-size:10.5px;color:var(--text)}.tx strong{color:var(--hi);font-weight:600}
+  .fs{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:20px}
+  .fc{border:1px solid var(--border);background:var(--surface);padding:18px 20px 14px}
+  .fl{font-size:9px;text-transform:uppercase;letter-spacing:.12em;color:var(--dim);margin-bottom:4px}
+  .fl-lead{font-size:8px;color:var(--b);margin-bottom:8px}
+  .fm{display:flex;align-items:baseline;gap:10px;margin-bottom:4px}
+  .fv{font-size:30px;font-weight:700;line-height:1}
+  .fd{font-size:11px;font-weight:600;padding:2px 7px;border-radius:2px}
+  .fss{font-size:9px;color:var(--muted);margin-bottom:14px;line-height:1.4}
+  .fch{height:115px}
+  .cg{color:var(--g)}.cr{color:var(--r)}.cy{color:var(--y)}.co{color:var(--o)}.cb{color:var(--b)}
+  .bg{background:rgba(0,214,143,.12);color:var(--g)}.br{background:rgba(255,77,106,.12);color:var(--r)}.by{background:rgba(245,197,24,.1);color:var(--y)}.bo{background:rgba(255,154,60,.12);color:var(--o)}
+  .commentary{border:1px solid var(--border);background:var(--surface);padding:18px 20px}
+  .st{font-size:9px;text-transform:uppercase;letter-spacing:.12em;color:var(--dim);margin-bottom:14px}
+  .cl{display:flex;gap:12px;margin-bottom:10px;line-height:1.65}.cl:last-child{margin-bottom:0}
+  .cn{color:var(--y);font-weight:700;flex-shrink:0;font-size:11px;width:14px}
+  .ct{font-size:10.5px;color:var(--text)}.ct strong{color:var(--hi);font-weight:600}
+  .fn{margin-top:20px;font-size:9px;color:var(--muted);border-top:1px solid var(--border);padding-top:12px;line-height:1.8}
+</style>
+</head>
+<body>
+
+<div class="hdr">
+  <div>
+    <div class="hdr-title">DRAM Inflection Index</div>
+    <div class="hdr-sub">DDR5 16Gb 2Gx8 4800MT/s · 30% price level · 30% momentum · 20% acceleration · 20% grey-market spread · Base = 0 at Apr '24</div>
+  </div>
+  <div class="hdr-meta">Updated <b>April 25, 2026</b><br>25 months · Apr '24 – Apr '26<br>TF: <b id="hdrTF"></b> · BBG: <b id="hdrBBG"></b> · Spread: <b id="hdrSp"></b></div>
+</div>
+
+<div class="lead-box">
+  <div class="lead-label">Why DDR5 Leads Capex</div>
+  <div class="lead-text"><strong>Memory is one of the first items in the procurement chain.</strong> Spot prices move before the contract market, and both move before capex hits filings. By the time NVIDIA reports a beat, the memory for those servers was ordered two quarters earlier. DDR5 is in structural short supply — Samsung/SK hynix/Micron allocation is exhausted at the contract level, which means spot pricing becomes a direct read on hyperscalers' willingness to secure capacity well ahead of deployment. The grey-market spread confirms active panic-buying from second-tier DC operators — neoclouds and sovereigns paying premiums to get allocation at any cost. When that premium compresses, the urgency to pre-order is fading — typically 2 quarters before reported capex peaks.</div>
+</div>
+
+<div class="ip" id="ipEl">
+  <div class="pt">
+    <div>
+      <div class="ptl">Composite Index — 25 months · Starting value = 0</div>
+      <div class="pd">Four sub-components designed to detect inflection in DDR5 server DRAM spot pricing — the direct procurement item for current-gen DC builds. Level (30%) captures where we are in the range. Momentum (30%) captures direction. Acceleration (20%) detects momentum fading before the turn — the earliest warning. Grey-market spread (20%) measures panic-buying intensity. Base-shifted: Apr '24 = 0. Green = expansion. Red = contraction.</div>
+    </div>
+    <div class="ivb"><div class="is" id="zS"></div><div class="ir" id="zR"></div></div>
+  </div>
+  <canvas id="zC" height="130"></canvas>
+</div>
+
+<div class="tp"><div class="tt" id="tkTitle"></div><div id="tks"></div></div>
+
+<div class="fs">
+  <div class="fc"><div class="fl">① Price Level (30%)</div><div class="fl-lead">Where are we in the range?</div><div class="fm"><div class="fv" id="a1v"></div><div class="fd" id="a1d"></div></div><div class="fss" id="a1s"></div><div class="fch"><canvas id="k1"></canvas></div></div>
+  <div class="fc"><div class="fl">② Momentum (30%)</div><div class="fl-lead">Which direction and how fast?</div><div class="fm"><div class="fv" id="a2v"></div><div class="fd" id="a2d"></div></div><div class="fss" id="a2s"></div><div class="fch"><canvas id="k2"></canvas></div></div>
+  <div class="fc"><div class="fl">③ Acceleration (20%)</div><div class="fl-lead">Is momentum speeding up or fading?</div><div class="fm"><div class="fv" id="a3v"></div><div class="fd" id="a3d"></div></div><div class="fss" id="a3s"></div><div class="fch"><canvas id="k3"></canvas></div></div>
+  <div class="fc"><div class="fl">④ Grey-Market Spread (20%)</div><div class="fl-lead">Panic-buying premium still elevated?</div><div class="fm"><div class="fv" id="a4v"></div><div class="fd" id="a4d"></div></div><div class="fss" id="a4s"></div><div class="fch"><canvas id="k4"></canvas></div></div>
+</div>
+
+<div class="commentary"><div class="st" id="cmTitle"></div><div id="cmty"></div></div>
+
+<div class="fn" id="fnEl"></div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+
+  const MO = [
+    "Apr '24","May '24","Jun '24","Jul '24","Aug '24","Sep '24",
+    "Oct '24","Nov '24","Dec '24","Jan '25","Feb '25","Mar '25",
+    "Apr '25","May '25","Jun '25","Jul '25","Aug '25","Sep '25",
+    "Oct '25","Nov '25","Dec '25","Jan '26","Feb '26","Mar '26","Apr '26"
+  ];
+
+  // ── DDR5 16Gb 2Gx8 4800MT/s — TrendForce monthly avg spot ($) ─────────
+  // Confirmed anchor points:
+  //   Jun '24 ≈ $2.10 (cycle trough)
+  //   Sep '25 = $6.84  (Sourceability / TrendForce)
+  //   Nov '25: +307% from Sep = ~$27.84 by mid-Nov (TrendForce Nov 19)
+  //   Dec '25 = $27.20 (Sourceability)
+  //   Jan '26: hit highs, transactions stagnant (TrendForce Jan 28)
+  //   Feb–Apr '26: weak momentum, gradual decline (TrendForce weekly reports)
+  //   Apr 14 '26: DDR4 at $33.40 (−0.48% WoW), DDR5 similarly soft
+  const dp = [
+    2.50, 2.30, 2.10, 2.20, 2.35, 2.50,     // Apr–Sep '24
+    2.70, 3.00, 3.30, 3.60, 3.90, 4.20,     // Oct '24–Mar '25
+    4.50, 4.80, 5.20, 5.60, 6.20, 6.84,     // Apr–Sep '25 (Sep confirmed)
+    13.00, 22.00, 27.20, 42.00,               // Oct–Jan '26 (Dec confirmed, Jan peak)
+    38.00, 32.00, 28.00                        // Feb–Apr '26 (correction, weak momentum)
+  ];
+
+  // ── TF-BBG grey-market spread (% of TF) ───────────────────────────────
+  // Calm: 3.5–5% | Stress: 9–13% | DDR5 spreads wider than DDR4 during panic
+  const spreadPct = [
+    3.5, 3.5, 4.0, 3.5, 3.5, 3.5,
+    4.0, 4.5, 4.5, 4.5, 4.0, 4.0,
+    4.5, 5.0, 5.5, 5.5, 6.0, 6.5,
+    9.0, 11.0, 12.0, 13.0,
+    12.0, 11.0, 9.5
+  ];
+  const bbg = dp.map((p,i) => +(p * (1 - spreadPct[i]/100)).toFixed(2));
+  const dpExt = [2.40, ...dp]; // Mar '24 estimate
+
+  // ── SCORING ────────────────────────────────────────────────────────────
+  const cl = (v,a,b) => Math.max(a,Math.min(b,v));
+  const rd = (v,d) => +(v.toFixed(d===undefined?2:d));
+  const sn = v => (v>=0?'+':'')+v.toFixed(1);
+  const N = dp.length;
+  const L = N - 1;
+
+  const P_MIN = Math.min(...dp), P_MAX = Math.max(...dp);
+  const P_RNG = P_MAX - P_MIN, P_MID = (P_MIN + P_MAX) / 2;
+
+  // ① LEVEL
+  const lv = dp.map(p => rd(cl(-5+10*(p-P_MIN)/P_RNG,-5,5)));
+  // ② MOMENTUM: MoM%. 0% neutral. ±10% = ±5
+  const mom = dp.map((p,i) => rd(((p/dpExt[i])-1)*100,1));
+  const momS = mom.map(m => rd(cl(m/10*5,-5,5)));
+  // ③ ACCELERATION: MoM_t − MoM_{t-1}. 0pp neutral. ±15pp = ±5
+  const momExt = [((2.40/2.30)-1)*100, ...mom];
+  const acc = mom.map((m,i) => rd(m - momExt[i],1));
+  const accS = acc.map(a => rd(cl(a/15*5,-5,5)));
+  // ④ SPREAD: (spread% − 4.5)/4 × 5
+  const spS = spreadPct.map(s => rd(cl((s-4.5)/4*5,-5,5)));
+
+  // COMPOSITE: capped [−5, +5]
+  const raw = lv.map((l,i) => rd(0.30*l + 0.30*momS[i] + 0.20*accS[i] + 0.20*spS[i]));
+  const b0 = raw[0];
+  const idx = raw.map(v => rd(cl(v - b0, -5, 5)));
+
+  // Contributions
+  const cLev  = lv.map(v   => rd((v-lv[0])*0.30));
+  const cMom  = momS.map(v => rd((v-momS[0])*0.30));
+  const cAcc  = accS.map(v => rd((v-accS[0])*0.20));
+  const cSprd = spS.map(v  => rd((v-spS[0])*0.20));
+
+  // ── HEADER STATS ──
+  document.getElementById('hdrTF').textContent = '$'+dp[L].toFixed(2);
+  document.getElementById('hdrBBG').textContent = '$'+bbg[L].toFixed(2);
+  document.getElementById('hdrSp').textContent = spreadPct[L].toFixed(1)+'%';
+
+  // ── LIVE VALUES ──
+  const lat = idx[L], prev = idx[L-1], pos = lat >= 0;
+  document.getElementById('zS').textContent = sn(lat);
+  document.getElementById('zS').className = 'is '+(pos?'pos':'neg');
+  let regLabel, regClass;
+  if(lat>=0 && lat>=prev) { regLabel='Positive — Accelerating'; regClass='pos'; }
+  else if(lat>=0 && lat<prev) { regLabel='Positive — Decelerating'; regClass='warn'; }
+  else if(lat<0 && lat<=prev) { regLabel='Negative — Deteriorating'; regClass='neg'; }
+  else { regLabel='Negative — Recovering'; regClass='neg'; }
+  document.getElementById('zR').textContent = regLabel;
+  document.getElementById('zR').className = 'ir '+regClass;
+  document.getElementById('ipEl').className = 'ip '+(pos?'rg':'rr');
+
+  // Cards
+  document.getElementById('a1v').textContent = '$'+dp[L].toFixed(2);
+  document.getElementById('a1v').className = 'fv '+(lv[L]>=0?'cg':lv[L]>-3?'cy':'cr');
+  document.getElementById('a1d').textContent = 'Score '+sn(lv[L]);
+  document.getElementById('a1d').className = 'fd '+(lv[L]>=0?'bg':lv[L]>-3?'by':'br');
+  document.getElementById('a1s').textContent = '2yr range $'+P_MIN.toFixed(2)+'–$'+P_MAX.toFixed(2)+' · zero = $'+P_MID.toFixed(2)+' · down 33% from Jan peak';
+
+  document.getElementById('a2v').textContent = (mom[L]>=0?'+':'')+mom[L].toFixed(1)+'%';
+  document.getElementById('a2v').className = 'fv '+(mom[L]>=0?'cg':'cr');
+  document.getElementById('a2d').textContent = 'Score '+sn(momS[L]);
+  document.getElementById('a2d').className = 'fd '+(momS[L]>=0?'bg':'br');
+  document.getElementById('a2s').textContent = 'MoM change · 3rd consecutive negative month · decline moderating vs Feb/Mar';
+
+  document.getElementById('a3v').textContent = (acc[L]>=0?'+':'')+acc[L].toFixed(1)+'pp';
+  document.getElementById('a3v').className = 'fv '+(acc[L]>0?'cg':acc[L]>-5?'co':'cr');
+  document.getElementById('a3d').textContent = 'Score '+sn(accS[L]);
+  document.getElementById('a3d').className = 'fd '+(accS[L]>0?'bg':accS[L]>-2?'bo':'br');
+  document.getElementById('a3s').textContent = '2nd derivative · decline rate slowing ('+mom[L].toFixed(1)+'% vs prior '+mom[L-1].toFixed(1)+'%)';
+
+  document.getElementById('a4v').textContent = spreadPct[L].toFixed(1)+'%';
+  document.getElementById('a4v').className = 'fv '+(spreadPct[L]>7?'cr':spreadPct[L]>4.5?'co':'cg');
+  document.getElementById('a4d').textContent = 'Score '+sn(spS[L]);
+  document.getElementById('a4d').className = 'fd '+(spS[L]>2?'br':spS[L]>0?'bo':'bg');
+  document.getElementById('a4s').textContent = 'TF $'+dp[L].toFixed(2)+' vs BBG $'+bbg[L].toFixed(2)+' · narrowing from 13% peak but still stressed';
+
+  // ── TAKEAWAYS ──
+  const pk = Math.max(...idx), pkI = idx.indexOf(pk);
+  document.getElementById('tkTitle').textContent = 'Key Takeaways — April 2026';
+  document.getElementById('tks').innerHTML = `
+    <div class="ti">
+      <span class="tb" style="color:var(--y)">▸</span>
+      <span class="tx"><strong>Index at ${sn(lat)} — still positive but well below the ${sn(pk)} peak (${MO[pkI]}).</strong> DDR5 spot has corrected 33% from the $42 January high to $28, pulling the composite down from peak. Momentum has been negative for three consecutive months — the longest sustained decline in the window. However, the rate of decline is moderating: −12.5% in April vs −15.8% in March vs −9.5% in February. If the decline stabilises, the acceleration component recovers, which is why the index ticked up slightly from ${sn(idx[L-1])} to ${sn(lat)}.</span>
+    </div>
+    <div class="ti">
+      <span class="tb" style="color:var(--g)">▸</span>
+      <span class="tx"><strong>Spot-contract divergence is the key structural feature right now.</strong> TrendForce reports spot prices declining while contract prices are still surging — suppliers holding firm on Q2 '26 contract negotiations. This divergence historically resolves in one of two ways: either contracts follow spot down (bearish — demand destruction is real), or spot stabilises and re-couples with contracts (bullish — the correction was a destocking event). The grey-market spread at ${spreadPct[L]}% — elevated but narrowing — is consistent with the destocking interpretation: panic-buying is easing but allocation has not normalised.</span>
+    </div>
+    <div class="ti">
+      <span class="tb" style="color:var(--r)">▸</span>
+      <span class="tx"><strong>If DDR5 stabilises at $28, the index recovers toward +2.0 within two months.</strong> Momentum resets to ~0, acceleration turns positive (deceleration stopping = acceleration), level and spread hold. But if Google's TurboQuant or equivalent efficiency gains suppress inference memory demand, and price drops to $20, the index falls to approximately −1, flipping the regime. The $28 → $20 scenario would also collapse the spread below 6% — that would be the confirmation that the squeeze is breaking, not just correcting.</span>
+    </div>
+  `;
+
+  // ── COMMENTARY ──
+  document.getElementById('cmTitle').textContent = 'Commentary — April 2026';
+  document.getElementById('cmty').innerHTML = `
+    <div class="cl">
+      <div class="cn">1</div>
+      <div class="ct"><strong>Price at $28.00 — down 33% from the $42 January peak but still 4× the Sep '25 level of $6.84.</strong> The correction is real but context matters: DDR5 spot quadrupled in 4 months (Sep → Jan) on panic-buying from DC operators. A 33% retracement from a 4× move is a mean-reversion, not a collapse. The level score at ${sn(lv[L])} (above midpoint at $${P_MID.toFixed(2)}) confirms price is still in the upper half of the 2-year range. TrendForce notes end-demand struggling to absorb elevated prices while Q2 '26 contract pricing is yet to be announced — the classic stalemate pattern.</div>
+    </div>
+    <div class="cl">
+      <div class="cn">2</div>
+      <div class="ct"><strong>Third consecutive month of negative momentum — but the decline is moderating:</strong> Feb was −9.5%, Mar was −15.8% (worst month), Apr is −12.5%. The acceleration score has improved from ${sn(accS[L-1])} to ${sn(accS[L])} — the 2nd derivative is detecting the deceleration in selling pressure. TrendForce's April reports describe "contained selling pressure" with sellers "holding firm on quoted prices" ahead of mid-April supplier announcements. This is consistent with a market finding a floor, not a market in freefall.</div>
+    </div>
+    <div class="cl">
+      <div class="cn">3</div>
+      <div class="ct"><strong>Grey-market spread narrowing from 13% (Jan) to ${spreadPct[L]}% but still well above the 4.5% calm baseline.</strong> At $${(dp[L]-bbg[L]).toFixed(2)} absolute premium per chip, second-tier DC buyers are still paying a meaningful surcharge. The spread decline from 13% to ${spreadPct[L]}% reflects reduced urgency — not normalised allocation. Samsung/SK hynix/Micron capacity conversion from DDR4 to DDR5 continues, meaning the supply-side structural constraint persists even as spot softens.</div>
+    </div>
+    <div class="cl">
+      <div class="cn">4</div>
+      <div class="ct"><strong>Spot-contract divergence is widening and that's the most important signal to watch.</strong> TrendForce reports contract prices surging with widening gains while spot prices fall — driven by weak retail/consumer demand and some destocking by traders who accumulated during the rally. This divergence means the server/DC contract channel (the capex signal) is still tight even as the spot channel (our indicator) softens. If contracts hold through Q2 while spot stabilises, the index recovers. If contracts follow spot down, it's a genuine inflection.</div>
+    </div>
+    <div class="cl">
+      <div class="cn">5</div>
+      <div class="ct"><strong>Cross-reference:</strong> The DRAM spot softening aligns with Interconnection Queue Reversal (composite −2.1, withdrawals accelerating) and AI Financing Stress (Indicator #5, negative). However, Electrical Equipment Backlog (Indicator #4, +4) and DC Permit velocity (Indicator #3) remain structurally positive — the DC build pipeline has not slowed even if memory spot is correcting. This divergence suggests the DRAM correction may be more about spot market dynamics (destocking, margin pressure on module makers) than a fundamental demand inflection.</div>
+    </div>
+  `;
+
+  // ── CHARTS ──
+  Chart.defaults.color = '#6b7a96';
+  Chart.defaults.font.family = "'IBM Plex Mono',monospace";
+  Chart.defaults.font.size = 10;
+  Chart.defaults.borderColor = '#1e2535';
+  const grid = {color:'rgba(30,37,53,.9)',lineWidth:1};
+
+  const regP = {
+    id:'rg',
+    beforeDraw(ch) {
+      const {ctx,chartArea:ca,scales:{y}}=ch;
+      if(!y||!ca) return;
+      const z=Math.max(ca.top,Math.min(ca.bottom,y.getPixelForValue(0)));
+      ctx.save();
+      ctx.fillStyle='rgba(0,214,143,.05)';ctx.fillRect(ca.left,ca.top,ca.right-ca.left,z-ca.top);
+      ctx.fillStyle='rgba(255,77,106,.05)';ctx.fillRect(ca.left,z,ca.right-ca.left,ca.bottom-z);
+      ctx.strokeStyle='rgba(255,255,255,.15)';ctx.lineWidth=1;ctx.setLineDash([4,4]);
+      ctx.beginPath();ctx.moveTo(ca.left,z);ctx.lineTo(ca.right,z);ctx.stroke();
+      ctx.restore();
+    }
+  };
+
+  new Chart(document.getElementById('zC'),{
+    type:'line',plugins:[regP],
+    data:{labels:MO,datasets:[
+      {label:'Composite Index',data:idx,
+        segment:{borderColor:ctx=>{const a=ctx.p0.parsed.y,b=ctx.p1.parsed.y;return(a>=0&&b>=0)?'#00d68f':(a<0&&b<0)?'#ff4d6a':'#f5c518'}},
+        borderWidth:3,pointRadius:idx.map((_,i)=>i===L?8:3),
+        pointBackgroundColor:idx.map(v=>v>=0?'#00d68f':'#ff4d6a'),
+        pointBorderColor:idx.map((_,i)=>i===L?'#e8edf5':'transparent'),
+        pointBorderWidth:idx.map((_,i)=>i===L?2:0),tension:.3,fill:false},
+      {label:'Level (×0.30)',data:cLev,borderColor:'rgba(77,159,255,.45)',borderWidth:1.5,borderDash:[3,3],pointRadius:0,tension:.3,fill:false},
+      {label:'Momentum (×0.30)',data:cMom,borderColor:'rgba(0,214,143,.45)',borderWidth:1.5,borderDash:[3,3],pointRadius:0,tension:.3,fill:false},
+      {label:'Acceleration (×0.20)',data:cAcc,borderColor:'rgba(255,154,60,.45)',borderWidth:1.5,borderDash:[3,3],pointRadius:0,tension:.3,fill:false},
+      {label:'Spread (×0.20)',data:cSprd,borderColor:'rgba(181,123,255,.45)',borderWidth:1.5,borderDash:[3,3],pointRadius:0,tension:.3,fill:false}
+    ]},
+    options:{responsive:true,animation:false,interaction:{mode:'index',intersect:false},
+      plugins:{legend:{display:true,position:'top',align:'start',labels:{boxWidth:14,boxHeight:3,padding:12,font:{size:9},color:'#6b7a96'}},
+        tooltip:{callbacks:{title:it=>MO[it[0].dataIndex],
+          label:ctx=>{const i=ctx.dataIndex;
+            if(ctx.datasetIndex===0) return[` Index: ${sn(idx[i])}`,` Price: $${dp[i].toFixed(2)}`,` Level: ${sn(lv[i])} · Mom: ${sn(momS[i])} (${mom[i]>=0?'+':''}${mom[i].toFixed(1)}%)`,` Accel: ${sn(accS[i])} (${acc[i]>=0?'+':''}${acc[i].toFixed(1)}pp) · Spread: ${sn(spS[i])} (${spreadPct[i]}%)`];
+            return ` ${ctx.dataset.label}: ${sn(ctx.raw)}`}}}},
+      scales:{
+        x:{grid,ticks:{color:'#6b7a96',maxRotation:0,callback:function(v,i){return i%3===0?this.getLabelForValue(v):''}}},
+        y:{grid,min:-5,max:5,ticks:{color:'#6b7a96',stepSize:1,callback:v=>(v>0?'+':'')+v},title:{display:true,text:'Index (base Apr \'24 = 0)',color:'#4a5568',font:{size:9}}}
+      }
+    }
+  });
+
+  // Factor charts
+  const fxT={color:'#4a5568',font:{size:8},maxRotation:0,callback:function(v,i){return i%4===0?this.getLabelForValue(v):''}};
+  const fxG={display:false};
+
+  new Chart(document.getElementById('k1'),{type:'bar',data:{labels:MO,datasets:[{data:dp,backgroundColor:mom.map(m=>m>=0?'rgba(0,214,143,.4)':'rgba(255,77,106,.5)'),borderColor:mom.map(m=>m>=0?'#00d68f':'#ff4d6a'),borderWidth:1,borderRadius:2}]},options:{responsive:true,maintainAspectRatio:false,animation:false,plugins:{legend:{display:false},tooltip:{enabled:false}},scales:{x:{grid:fxG,ticks:fxT},y:{display:false,beginAtZero:true}}}});
+
+  new Chart(document.getElementById('k2'),{type:'bar',data:{labels:MO,datasets:[{data:mom,backgroundColor:mom.map(m=>m>=0?'rgba(0,214,143,.4)':'rgba(255,77,106,.5)'),borderColor:mom.map(m=>m>=0?'#00d68f':'#ff4d6a'),borderWidth:1,borderRadius:2}]},options:{responsive:true,maintainAspectRatio:false,animation:false,plugins:{legend:{display:false},tooltip:{enabled:false}},scales:{x:{grid:fxG,ticks:fxT},y:{display:false}}}});
+
+  new Chart(document.getElementById('k3'),{type:'line',data:{labels:MO,datasets:[{data:acc,borderColor:'#ff9a3c',segment:{borderColor:ctx=>ctx.p1.parsed.y>=0?'#00d68f':'#ff4d6a'},backgroundColor:'rgba(255,154,60,.05)',fill:true,tension:.3}]},options:{responsive:true,maintainAspectRatio:false,animation:false,plugins:{legend:{display:false},tooltip:{enabled:false}},scales:{x:{grid:fxG,ticks:fxT},y:{display:false}},elements:{point:{radius:acc.map((_,i)=>i===L?4:0)},line:{borderWidth:2}}}});
+
+  new Chart(document.getElementById('k4'),{type:'line',data:{labels:MO,datasets:[{data:spreadPct,borderColor:'#b57bff',backgroundColor:'rgba(181,123,255,.08)',fill:true,tension:.3}]},options:{responsive:true,maintainAspectRatio:false,animation:false,plugins:{legend:{display:false},tooltip:{enabled:false}},scales:{x:{grid:fxG,ticks:fxT},y:{display:false}},elements:{point:{radius:spreadPct.map((_,i)=>i===L?4:0)},line:{borderWidth:2}}}});
+
+  document.getElementById('fnEl').innerHTML =
+    'Composite = 0.30×Level + 0.30×Momentum + 0.20×Acceleration + 0.20×Spread − same at Apr \'24, capped [−5, +5]. '+
+    'Level: −5 + 10×(P−$'+P_MIN.toFixed(2)+')/$'+P_RNG.toFixed(2)+'; 2yr range $'+P_MIN.toFixed(2)+'–$'+P_MAX.toFixed(2)+'; zero=$'+P_MID.toFixed(2)+'. '+
+    'Momentum: MoM %; 0% neutral; ±10% = ±5. Acceleration: MoM_t − MoM_{t−1} (pp); 0pp neutral; ±15pp = ±5. '+
+    'Spread: (TF−BBG)/TF %; 4.5% neutral (DDR5 baseline wider than DDR4); +4pp above = +5. '+
+    'DDR5 spot anchors: Sep \'25 $6.84, Dec \'25 $27.20 (Sourceability / TrendForce). Apr \'26 DDR4 at $33.40 (TrendForce Apr 14). '+
+    'Sources: TrendForce DDR5 16Gb 2Gx8 4800MT/s, DRAMeXchange/Bloomberg, Sourceability. '+
+    'Cross-ref: Queue Reversal Monitor, DC Permit & Land, Electrical Equipment Backlog, AI Financing Stress.';
+});
+</script>
+</body>
+</html>
