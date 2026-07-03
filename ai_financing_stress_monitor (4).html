@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -89,15 +90,15 @@
 <div class="hdr">
   <div>
     <div class="hdr-title">AI Financing Stress Monitor</div>
-    <div class="hdr-sub">Sources: ICE CDS (CRWV 5yr CZ037664) · ICE BofA HY/IG OAS via FRED (BAMLH0A0HYM2, BAMLC0A0CM) · PitchBook · Crunchbase · LCD &nbsp;·&nbsp; Capex Inflection Indicator #5</div>
+    <div class="hdr-sub">Sources: ICE CDS (CRWV 5yr CZ037664) · ICE BofA HY/IG OAS via FRED (BAMLH0A0HYM2, BAMLC0A0CM) · PitchBook · Crunchbase · Bloomberg &nbsp;·&nbsp; Capex Inflection Indicator #5</div>
   </div>
-  <div class="hdr-meta">Generated <b>May 29, 2026</b><br>Coverage: CDS · HY/IG OAS differential · Private round velocity · 26-month history</div>
+  <div class="hdr-meta">Generated <b>July 3, 2026</b><br>Coverage: CDS · HY/IG OAS differential · Private round velocity · 27-month history</div>
 </div>
 
 <div class="composite-panel">
   <div class="panel-hdr">
     <div>
-      <div class="panel-title">Composite Stress Index — 26-month history (Apr 2024 – May 2026) · Base = 0</div>
+      <div class="panel-title">Composite Stress Index — 27-month history (Apr 2024 – Jun 2026) · Base = 0</div>
       <div style="margin-top:5px" class="panel-desc">Weighted blend: CoreWeave CDS spread (20%) · ICE BofA HY/IG OAS differential (40%) · private-round velocity &amp; down-round rate (40%). Each factor anchor-scored vs. neutral baseline, clipped [−5, +5], base-shifted Apr '24 = 0. Green = above baseline · Red = below baseline. Higher = healthier financing conditions.</div>
     </div>
     <div class="composite-val">
@@ -118,10 +119,10 @@
     <div class="ind-label">① CoreWeave CDS Spread (5yr, bps)</div>
     <div class="ind-lead">Neocloud-specific credit stress · ICE CZ037664</div>
     <div class="ind-main">
-      <div class="ind-value warn">~450</div>
-      <div class="ind-delta good">↓ −323bps from Dec peak</div>
+      <div class="ind-value warn">~452</div>
+      <div class="ind-delta good">↓ −321bps from Dec peak</div>
     </div>
-    <div class="ind-sub">Peak: 773bps Dec '25 · $3.1B loan oversubscribed 5–6× (May '26) · Q1 rev +112% YoY</div>
+    <div class="ind-sub">Bloomberg confirmed ≤452bps Jun 11 · Applied Digital raised $1.59B at 7% vs 10% Nov · CRWV in market for $3.5B bond</div>
     <div class="ind-chart-wrap"><canvas id="cdsChart"></canvas></div>
   </div>
 
@@ -132,7 +133,7 @@
       <div class="ind-value good" id="hyVal">…</div>
       <div class="ind-delta good" id="hyDelta">…</div>
     </div>
-    <div class="ind-sub" id="hySub">Broad HY minus IG OAS · tightening = healthier public credit</div>
+    <div class="ind-sub" id="hySub">HY OAS 278bps confirmed Jun 25 (FRED) · IG ~78bps · tightest differential in 27-month window</div>
     <div class="ind-chart-wrap"><canvas id="spreadChart"></canvas></div>
   </div>
 
@@ -140,36 +141,36 @@
     <div class="ind-label">③ Private AI Round Velocity (deals/mo)</div>
     <div class="ind-lead">Series B+ closes · PitchBook / Crunchbase</div>
     <div class="ind-main">
-      <div class="ind-value bad">29</div>
-      <div class="ind-delta bad">↓ −19 vs Apr '24</div>
+      <div class="ind-value bad">30</div>
+      <div class="ind-delta bad">↓ −18 vs Apr '24</div>
     </div>
-    <div class="ind-sub">Deal counts fell despite record Q1 values — capital concentrating in megadeals · Series B dipped QoQ</div>
+    <div class="ind-sub">Deal counts falling despite record dollar volumes — $83.5B split across 1,543 deals outside Q1 megadeals · IPO supercycle beginning</div>
     <div class="ind-chart-wrap"><canvas id="roundChart"></canvas></div>
   </div>
 </div>
 
 <div class="bottom-row">
   <div class="section">
-    <div class="section-title">Monthly Commentary — May 2026</div>
+    <div class="section-title">Monthly Commentary — June 2026</div>
     <div class="comment-line">
       <div class="cn">1</div>
-      <div class="ct"><strong>Index has moved from −2.3 in April to an improved reading in May — first MoM gain since Aug '25:</strong> All three sub-components contributed positively: CDS tightened ~10bps, HY/IG held near tights, and round velocity bounced from 27 to 29. The composite crossed a meaningful threshold — breaking a nine-month streak of either deterioration or flat readings. It remains comfortably negative, but the direction has changed. This is the first month the data supports a stabilisation narrative rather than a stress narrative.</div>
+      <div class="ct"><strong>Second consecutive month of improvement — composite has recovered ~0.4pts from the Dec '25 trough:</strong> The index has now risen for two straight months, with CDS compression providing the sharpest positive impulse and HY/IG tightening adding incremental support. Round velocity ticked up to 30 but remains structurally depressed. The pattern is consistent with a credit-led recovery that has not yet filtered into the private market — the gap between the two defines both the current score and how much further the composite can recover without a deal-count inflection.</div>
     </div>
     <div class="comment-line">
       <div class="cn">2</div>
-      <div class="ct"><strong>CDS tightening is the sharpest positive MoM move — and it has legs:</strong> The $3.1B CoreWeave leveraged loan arranged by Morgan Stanley/MUFG attracted $15–19B in orders (5–6× oversubscribed) and priced with margins tightening 50bps to SOFR+450. That is the single clearest market signal that institutional credit appetite for tier-1 neocloud paper has recovered from the Dec peak. Q1 earnings were mixed (rev +112% beat; EPS missed by 54%; backlog +50% to $99.4B) — but the loan market looked through the P&amp;L miss and focused on backlog. CDS at ~450bps is ~320bps inside the Dec '25 peak.</div>
+      <div class="ct"><strong>CoreWeave CDS confirmed ≤452bps by Bloomberg (Jun 11) — a 321bps compression from the Dec peak:</strong> The broader ecosystem around CoreWeave is moving in lockstep. Applied Digital raised $1.59B in junk bonds at 7% yield this week — versus the 10% investors demanded for the same project in November. The decline reflects how CoreWeave's credit risk has improved as contract visibility has grown. CoreWeave is now in the market for a $3.5B bond (dollars + euros), meeting European fixed-income investors — the first cross-currency issuance attempt signals genuine institutional demand broadening beyond US credit markets.</div>
     </div>
     <div class="comment-line">
       <div class="cn">3</div>
-      <div class="ct"><strong>HY/IG differential at ~205bps — stable for four consecutive months and the composite's anchor to positive territory:</strong> Broad HY near 25-year tights, IG at ~80bps. This component has been absorbing the private-market stress for the entire period and has not widened. At 40% weight it is preventing the composite from reflecting the full severity implied by round velocity alone. The AI credit "juggernaut" characterisation from Bloomberg in April has held through May — AI-linked issuance remains bid.</div>
+      <div class="ct"><strong>HY/IG differential hits 27-month low of ~200bps — HY OAS at 278bps confirmed June 25 (FRED):</strong> At 40% weight this is the composite's most significant positive contributor. The differential started the series at 240bps in Apr '24 and has compressed steadily, reaching a level consistent with near-25-year credit market tights. The AI credit "juggernaut" continues. Baseten ($1.5B Series F at AI inference), Peregrine ($250M Series D) closed in the Jun 18–26 window — the late-stage market for established names remains fully open.</div>
     </div>
     <div class="comment-line">
       <div class="cn">4</div>
-      <div class="ct"><strong>Round velocity at 29 — a bounce, but the structural story is unchanged:</strong> The apparent Q1 2026 VC boom ($300B+ globally) is a three-deal story: OpenAI $122B, xAI $20B, Anthropic $30.6B. Strip those out and Series B activity dipped QoQ, seed deal counts fell 30–40%, and capital concentration intensified. The 29 current reading is still 39% below the Apr '24 baseline of 48 and 46% below the Jun '25 peak. A recovery in this component — which carries 40% weight — is what would move the composite out of negative territory. It has not started yet.</div>
+      <div class="ct"><strong>Round velocity at 30 — marginal improvement but the concentration story is sharpening:</strong> Outside the Q1 megadeals (OpenAI $122B, Anthropic $30B, xAI $20B), the remaining $83.5B in Q1 AI funding was split across just 1,543 deals. Deal counts are falling even as dollar volume surges. The IPO supercycle now underway — Cerebras +68% on day one in May, SpaceX roadshow in June, OpenAI targeting H2 — may improve LP distributions and sentiment, which historically feeds back into Series B deal flow with a 1–2 quarter lag.</div>
     </div>
     <div class="comment-line">
       <div class="cn">5</div>
-      <div class="ct"><strong>The recovery path is CDS-led with round velocity as the gating condition:</strong> If Q2 earnings (Aug 18) confirm backlog-to-revenue conversion — CoreWeave guided $12–13B FY revenue with an $18–19B exit run rate — CDS should continue toward the 350–380bps range, adding further composite improvement. But the composite cannot reach neutral until round velocity stabilises above ~38 deals/mo. The gap between a public-credit recovery (already happening) and a private-market recovery (not yet) defines the remaining downside in the index.</div>
+      <div class="ct"><strong>The composite recovery path remains CDS-led and dependent on round velocity for the final leg:</strong> With both CDS and HY spreads now clearly improving, the composite is tracking the public credit recovery faithfully. The residual gap to neutral is almost entirely explained by round velocity being 33% below baseline. The next inflection to watch: whether the IPO supercycle LP distributions in Q3 convert into re-opened Series B pipelines by Q4 '26. If velocity recovers to 38–40 deals/mo, the composite crosses into positive territory for the first time since Aug '25.</div>
     </div>
   </div>
 
@@ -181,51 +182,51 @@
       </thead>
       <tbody>
         <tr>
-          <td><span class="ent-name">CoreWeave</span><span class="ent-sub">CRWV · US · Neocloud · $107 stock</span></td>
-          <td><span class="val-o">~450 bps</span><br><span style="font-size:8.5px;color:var(--dim)">5yr CDS · ↓ from 773 peak Dec '25</span></td>
-          <td><span class="val-o">B+</span><br><span style="font-size:8px;color:var(--y)">→ Stable (Q1 miss noted)</span></td>
+          <td><span class="ent-name">CoreWeave</span><span class="ent-sub">CRWV · US · Neocloud · $3.5B bond in market</span></td>
+          <td><span class="val-o">~452 bps</span><br><span style="font-size:8.5px;color:var(--dim)">5yr CDS · Bloomberg Jun 11 confirmed</span></td>
+          <td><span class="val-o">B+</span><br><span style="font-size:8px;color:var(--g)">↑ Outlook improving</span></td>
           <td>
             <div class="trend-cell">
-              <div class="trend-row"><span class="trend-label">6mo ago (Nov)</span><div class="trend-bar-wrap"><div class="trend-bar" style="width:95%;background:var(--r)"></div></div><span class="trend-val val-r">~720bps</span></div>
-              <div class="trend-row"><span class="trend-label">current</span><div class="trend-bar-wrap"><div class="trend-bar" style="width:52%;background:var(--o)"></div></div><span class="trend-val val-o">~450bps</span></div>
+              <div class="trend-row"><span class="trend-label">6mo ago (Dec)</span><div class="trend-bar-wrap"><div class="trend-bar" style="width:100%;background:var(--r)"></div></div><span class="trend-val val-r">773bps</span></div>
+              <div class="trend-row"><span class="trend-label">current</span><div class="trend-bar-wrap"><div class="trend-bar" style="width:50%;background:var(--o)"></div></div><span class="trend-val val-o">~452bps</span></div>
             </div>
           </td>
         </tr>
         <tr>
-          <td><span class="ent-name">xAI (term loan)</span><span class="ent-sub">Private · US · Model Lab · $20B raise Q1</span></td>
-          <td><span class="val-o">OAS ~360 bps</span><br><span style="font-size:8.5px;color:var(--dim)">$6B TLB · Feb '26 refin. · tightening</span></td>
-          <td><span class="val-o">B</span><br><span style="font-size:8px;color:var(--g)">↑ Improved post-raise</span></td>
+          <td><span class="ent-name">Applied Digital</span><span class="ent-sub">APLD · US · DC developer · CoreWeave tenant</span></td>
+          <td><span class="val-y">7.0% yield</span><br><span style="font-size:8.5px;color:var(--dim)">$1.59B JB Jun '26 · ↓ from 10% Nov '25</span></td>
+          <td><span class="val-y">B−</span><br><span style="font-size:8px;color:var(--g)">↑ Cost of capital improving</span></td>
           <td>
             <div class="trend-cell">
-              <div class="trend-row"><span class="trend-label">6mo ago</span><div class="trend-bar-wrap"><div class="trend-bar" style="width:82%;background:var(--r)"></div></div><span class="trend-val val-r">447bps</span></div>
-              <div class="trend-row"><span class="trend-label">current</span><div class="trend-bar-wrap"><div class="trend-bar" style="width:60%;background:var(--o)"></div></div><span class="trend-val val-o">~360bps</span></div>
+              <div class="trend-row"><span class="trend-label">6mo ago (Nov)</span><div class="trend-bar-wrap"><div class="trend-bar" style="width:90%;background:var(--r)"></div></div><span class="trend-val val-r">10.0% yld</span></div>
+              <div class="trend-row"><span class="trend-label">current</span><div class="trend-bar-wrap"><div class="trend-bar" style="width:55%;background:var(--y)"></div></div><span class="trend-val val-y">7.0% yld</span></div>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td><span class="ent-name">xAI (term loan)</span><span class="ent-sub">Private · US · $20B raise Q1 '26</span></td>
+          <td><span class="val-y">OAS ~340 bps</span><br><span style="font-size:8.5px;color:var(--dim)">$6B TLB · continued tightening</span></td>
+          <td><span class="val-o">B</span><br><span style="font-size:8px;color:var(--g)">↑ Improved post $20B raise</span></td>
+          <td>
+            <div class="trend-cell">
+              <div class="trend-row"><span class="trend-label">6mo ago (Dec)</span><div class="trend-bar-wrap"><div class="trend-bar" style="width:78%;background:var(--r)"></div></div><span class="trend-val val-r">~580bps</span></div>
+              <div class="trend-row"><span class="trend-label">current</span><div class="trend-bar-wrap"><div class="trend-bar" style="width:55%;background:var(--y)"></div></div><span class="trend-val val-y">~340bps</span></div>
             </div>
           </td>
         </tr>
         <tr>
           <td><span class="ent-name">Crusoe Energy</span><span class="ent-sub">Private · US · GPU Cloud · $1.38B Series E</span></td>
-          <td><span class="val-o">OAS ~420 bps</span><br><span style="font-size:8.5px;color:var(--dim)">Series E at $10B val. — improved</span></td>
-          <td><span class="val-o">B−</span><br><span style="font-size:8px;color:var(--y)">↑ Upgraded post Series E</span></td>
+          <td><span class="val-o">OAS ~400 bps</span><br><span style="font-size:8.5px;color:var(--dim)">$10B val · continuing to tighten</span></td>
+          <td><span class="val-o">B−</span><br><span style="font-size:8px;color:var(--y)">→ Stable post Series E</span></td>
           <td>
             <div class="trend-cell">
-              <div class="trend-row"><span class="trend-label">6mo ago</span><div class="trend-bar-wrap"><div class="trend-bar" style="width:90%;background:var(--r)"></div></div><span class="trend-val val-r">~490bps</span></div>
-              <div class="trend-row"><span class="trend-label">current</span><div class="trend-bar-wrap"><div class="trend-bar" style="width:65%;background:var(--o)"></div></div><span class="trend-val val-o">~420bps</span></div>
+              <div class="trend-row"><span class="trend-label">6mo ago (Dec)</span><div class="trend-bar-wrap"><div class="trend-bar" style="width:85%;background:var(--r)"></div></div><span class="trend-val val-r">~490bps</span></div>
+              <div class="trend-row"><span class="trend-label">current</span><div class="trend-bar-wrap"><div class="trend-bar" style="width:60%;background:var(--o)"></div></div><span class="trend-val val-o">~400bps</span></div>
             </div>
           </td>
         </tr>
         <tr>
-          <td><span class="ent-name">Lambda Labs</span><span class="ent-sub">Private · US · GPU Cloud</span></td>
-          <td><span class="val-o">OAS ~320 bps</span><br><span style="font-size:8.5px;color:var(--dim)">Series D debt · covenant watch</span></td>
-          <td><span class="val-y">B+</span><br><span style="font-size:8px;color:var(--y)">→ Stable</span></td>
-          <td>
-            <div class="trend-cell">
-              <div class="trend-row"><span class="trend-label">6mo ago</span><div class="trend-bar-wrap"><div class="trend-bar" style="width:44%;background:var(--y)"></div></div><span class="trend-val val-y">268bps</span></div>
-              <div class="trend-row"><span class="trend-label">current</span><div class="trend-bar-wrap"><div class="trend-bar" style="width:55%;background:var(--o)"></div></div><span class="trend-val val-o">~320bps</span></div>
-            </div>
-          </td>
-        </tr>
-        <tr>
-          <td><span class="ent-name">Microsoft / Google / Amazon</span><span class="ent-sub">Public · US · Hyperscaler · $490–520B CapEx '26</span></td>
+          <td><span class="ent-name">Microsoft / Google / Amazon</span><span class="ent-sub">Public · Hyperscaler · $490–520B CapEx '26</span></td>
           <td><span class="val-g">~60–76 bps</span><br><span style="font-size:8.5px;color:var(--dim)">5yr CDS avg · near 25yr tights</span></td>
           <td><span class="val-g">AAA / Aaa</span><br><span style="font-size:8px;color:var(--g)">→ Stable</span></td>
           <td>
@@ -253,43 +254,47 @@ document.addEventListener('DOMContentLoaded', function () {
     rv:  { neutral: 45,  range: 20,  invert: false }
   };
 
-  // 26 months: Apr '24 → May '26
+  // 27 months: Apr '24 → Jun '26
   const LABELS = [
     "Apr '24","May '24","Jun '24","Jul '24","Aug '24","Sep '24",
     "Oct '24","Nov '24","Dec '24","Jan '25","Feb '25","Mar '25",
     "Apr '25","May '25","Jun '25","Jul '25","Aug '25","Sep '25",
-    "Oct '25","Nov '25","Dec '25","Jan '26","Feb '26","Mar '26","Apr '26","May '26"
+    "Oct '25","Nov '25","Dec '25","Jan '26","Feb '26","Mar '26","Apr '26","May '26","Jun '26"
   ];
 
   // ① CoreWeave CDS (bps)
-  // Confirmed: Sep '25 = 371 (TheValueist/ICE CZ037664), Nov 7 '25 ≈ 510 (Kedrosky),
-  //            Dec 12 '25 = 773 (TheValueist peak), Feb 12 '26 = 675 (RIA)
-  // Apr '26 ≈ 460 (oversubscribed HY notes at 102); May '26 ≈ 450 ($3.1B loan 5-6× covered)
+  // Confirmed anchors: Sep '25 = 371 (TheValueist/ICE CZ037664)
+  //                    Nov 7 '25 ≈ 510 (Kedrosky)
+  //                    Dec 12 '25 = 773 (TheValueist/ICE — peak, "8.81pp")
+  //                    Feb '26 ≈ 675 (RIA/Investing.com)
+  //                    Jun '26 ≤ 452 (Bloomberg Jun 11, "fell to as low as 4.52pp this month")
   const rawCDS = [
     180, 190, 200, 210, 220, 230,     // Apr–Sep '24 (pre-IPO proxy OAS)
     250, 265, 280, 300, 320, 350,     // Oct '24–Mar '25 (IPO Mar '25)
     380, 370, 360, 375, 390, 371,     // Apr–Sep '25 (Sep confirmed 371)
-    510, 720, 773, 710, 675, 570, 460, 450  // Oct '25–May '26
+    510, 720, 773, 710, 675, 570, 460, 450, 452  // Oct '25–Jun '26
   ];
 
   // ② ICE BofA HY/IG OAS differential (BAMLH0A0HYM2 − BAMLC0A0CM)
-  // Apr '26 confirmed: HY ~284bps, IG ~80bps → diff ~204bps (FRED)
-  // May '26: FRED updated May 21 — stable, ~205bps
+  // Confirmed: Jun 25 '26 HY = 278bps (FRED/govspending.org)
+  //            IG ~78bps → diff ~200bps
+  //            This is the tightest reading in the 27-month series
   const rawHY = [
     240, 237, 235, 232, 229, 226,     // Apr–Sep '24
     224, 221, 218, 216, 214, 212,     // Oct '24–Mar '25
     212, 213, 214, 215, 213, 212,     // Apr–Sep '25
-    210, 213, 209, 208, 207, 206, 204, 205  // Oct '25–May '26
+    210, 213, 209, 208, 207, 206, 204, 205, 200  // Oct '25–Jun '26
   ];
 
   // ③ Private AI Series B+ deal velocity (deals/mo)
-  // Q1 2026: deal counts fell despite record values — capital concentrating in megadeals
-  // Series B dipped QoQ (Crunchbase); seed counts −30% YoY; Series C+ 584 deals in Q1 total
+  // Jun '26: deal counts falling despite record dollar volumes
+  // $83.5B in Q1 split across 1,543 deals outside megadeals
+  // IPO supercycle beginning — may support private market with lag
   const rawRV = [
      48,  50,  52,  54,  53,  51,     // Apr–Sep '24
      50,  48,  45,  44,  46,  48,     // Oct '24–Mar '25
      54,  52,  54,  48,  43,  40,     // Apr–Sep '25
-     38,  33,  35,  34,  33,  31,  27,  29  // Oct '25–May '26
+     38,  33,  35,  34,  33,  31,  27,  29,  30  // Oct '25–Jun '26
   ];
 
   // ── SCORING ──────────────────────────────────────────────────────────
@@ -315,7 +320,7 @@ document.addEventListener('DOMContentLoaded', function () {
   // ── LIVE SCORE ────────────────────────────────────────────────────────
   const L      = idx.length - 1;
   const latest = idx[L];
-  const prev      = idx[L - 1];
+  const prev   = idx[L - 1];
   const latestStr = (latest >= 0 ? '+' : '') + latest.toFixed(1);
 
   let statusText, themeColor;
@@ -337,14 +342,14 @@ document.addEventListener('DOMContentLoaded', function () {
   document.getElementById('scalePip').style.left         = pipPct + '%';
   document.getElementById('scalePip').style.borderColor  = themeColor;
 
-  // HY card
+  // HY card — live
   const latHY  = rawHY[L];
   const initHY = rawHY[0];
   const chgHY  = latHY - initHY;
   document.getElementById('hyVal').textContent   = '~' + latHY + 'bps';
   document.getElementById('hyDelta').textContent = (chgHY <= 0 ? '↓ ' : '↑ +') + Math.abs(chgHY) + 'bps vs Apr \'24';
   document.getElementById('hySub').textContent   =
-    'HY ~285bps, IG ~80bps (FRED May \'26) · tightened ' + Math.abs(chgHY) + 'bps from start';
+    'HY 278bps confirmed Jun 25 (FRED) · IG ~78bps → diff ' + latHY + 'bps · 27-mo tightest';
 
   // Footnote
   document.getElementById('footnoteEl').innerHTML =
@@ -353,11 +358,12 @@ document.addEventListener('DOMContentLoaded', function () {
     '② ICE BofA HY Master II OAS minus IG Corporate OAS (BAMLH0A0HYM2 − BAMLC0A0CM, FRED daily) vs. neutral 280bps (40%); ' +
     '③ Private AI Series B+ deal velocity vs. neutral 45 deals/mo (40%). ' +
     'Factor scored (raw − neutral) ÷ range × 5, inverted where wider/lower = worse, clipped [−5, +5]. Base-shifted Apr \'24 = 0. ' +
-    'CDS confirmed: Sep \'25 = 371bps (TheValueist/ICE CZ037664); Nov 7 \'25 ≈ 510bps (Kedrosky); Dec 12 \'25 = 773bps (peak); ' +
-    'Feb \'26 ≈ 675bps (RIA/Investing.com); Apr \'26 ≈ 460bps (HY notes at 102); May \'26 ≈ 450bps ($3.1B TLB 5–6× covered). ' +
+    'CDS confirmed: Sep \'25 = 371bps; Nov 7 \'25 ≈ 510bps; Dec 12 \'25 = 773bps peak ("8.81pp", TheValueist/ICE CZ037664); ' +
+    'Feb \'26 ≈ 675bps (RIA); Jun \'26 ≤ 452bps ("fell to as low as 4.52pp", Bloomberg Jun 11). ' +
     'Pre-IPO CDS (pre-Mar \'25) = proxy OAS estimates. ' +
-    'HY/IG differential: Apr \'26 HY ~284bps, IG ~80bps; May \'26 from FRED (updated May 21). ' +
-    'Round velocity: PitchBook/Crunchbase. Q1 \'26 confirmed Series B dip QoQ; deal counts falling despite record aggregate values. ' +
+    'HY/IG: Jun 25 \'26 HY = 278bps (2.78%, FRED BAMLH0A0HYM2 via govspending.org); IG ~78bps estimated. ' +
+    'Applied Digital $1.59B bond at 7% yield (Jun \'26) vs 10% (Nov \'25): Bloomberg Jun 11 \'26. ' +
+    'Round velocity: PitchBook/Crunchbase. Q1 \'26: $83.5B outside megadeals across 1,543 deals. ' +
     'Capex Inflection Indicator #5.';
 
   // ── CHART DEFAULTS ─────────────────────────────────────────────────────
