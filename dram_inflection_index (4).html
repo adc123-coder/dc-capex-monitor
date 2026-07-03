@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -63,7 +64,7 @@
     <div class="hdr-title">DRAM Inflection Index</div>
     <div class="hdr-sub">DDR5 16Gb 2Gx8 4800MT/s · 30% price level · 30% momentum · 20% acceleration · 20% grey-market spread · Base = 0 at Apr '24</div>
   </div>
-  <div class="hdr-meta">Updated <b>May 29, 2026</b><br>26 months · Apr '24 – May '26<br>TF: <b id="hdrTF"></b> · BBG: <b id="hdrBBG"></b> · Spread: <b id="hdrSp"></b></div>
+  <div class="hdr-meta">Updated <b>July 3, 2026</b><br>27 months · Apr '24 – Jun '26<br>TF: <b id="hdrTF"></b> · BBG: <b id="hdrBBG"></b> · Spread: <b id="hdrSp"></b></div>
 </div>
 
 <div class="lead-box">
@@ -74,15 +75,15 @@
 <div class="ip" id="ipEl">
   <div class="pt">
     <div>
-      <div class="ptl">Composite Index — 26 months · Starting value = 0</div>
-      <div class="pd">Four sub-components designed to detect inflection in DDR5 server DRAM spot pricing. Level (30%) captures where we are in the range. Momentum (30%) captures direction. Acceleration (20%) detects momentum fading before the turn — the earliest warning. Grey-market spread (20%) measures panic-buying intensity. Base-shifted: Apr '24 = 0. Green = expansion. Red = contraction.</div>
+      <div class="ptl">Composite Index — 27 months · Starting value = 0</div>
+      <div class="pd">Four sub-components designed to detect inflection in DDR5 server DRAM spot pricing. Level (30%) captures where we are in the range. Momentum (30%) captures direction. Acceleration (20%) detects momentum fading before the turn. Grey-market spread (20%) measures panic-buying intensity. Base-shifted: Apr '24 = 0. Green = expansion. Red = contraction.</div>
     </div>
     <div class="ivb"><div class="is" id="zS"></div><div class="ir" id="zR"></div></div>
   </div>
   <canvas id="zC" height="130"></canvas>
 </div>
 
-<div class="tp"><div class="tt">Key Takeaways — May 2026</div><div id="tks"></div></div>
+<div class="tp"><div class="tt">Key Takeaways — July 2026</div><div id="tks"></div></div>
 
 <div class="fs">
   <div class="fc"><div class="fl">① Price Level (30%)</div><div class="fl-lead">Where are we in the range?</div><div class="fm"><div class="fv" id="a1v"></div><div class="fd" id="a1d"></div></div><div class="fss" id="a1s"></div><div class="fch"><canvas id="k1"></canvas></div></div>
@@ -91,7 +92,7 @@
   <div class="fc"><div class="fl">④ Grey-Market Spread (20%)</div><div class="fl-lead">Panic-buying premium still elevated?</div><div class="fm"><div class="fv" id="a4v"></div><div class="fd" id="a4d"></div></div><div class="fss" id="a4s"></div><div class="fch"><canvas id="k4"></canvas></div></div>
 </div>
 
-<div class="commentary"><div class="st">Commentary — May 2026</div><div id="cmty"></div></div>
+<div class="commentary"><div class="st">Commentary — July 2026</div><div id="cmty"></div></div>
 <div class="fn" id="fnEl"></div>
 
 <script>
@@ -101,40 +102,46 @@ document.addEventListener('DOMContentLoaded', function() {
     "Apr '24","May '24","Jun '24","Jul '24","Aug '24","Sep '24",
     "Oct '24","Nov '24","Dec '24","Jan '25","Feb '25","Mar '25",
     "Apr '25","May '25","Jun '25","Jul '25","Aug '25","Sep '25",
-    "Oct '25","Nov '25","Dec '25","Jan '26","Feb '26","Mar '26","Apr '26","May '26"
+    "Oct '25","Nov '25","Dec '25","Jan '26","Feb '26","Mar '26","Apr '26","May '26","Jun '26"
   ];
 
   // DDR5 16Gb 2Gx8 4800MT/s — TrendForce monthly avg spot ($)
-  // Confirmed: Sep '25 $6.84, Dec '25 $27.20 (Sourceability/TrendForce)
-  // Jan '26 peak (TF Jan 28: "hit highs, stagnant")
-  // Feb–Apr '26: correction (TF: "weak momentum", "contained selling pressure")
-  // May '26: stabilisation, gains narrowing (TF May 27: "DDR5 spot gains narrow")
+  // Anchors: Sep '25 $6.84, Dec '25 $27.20 (confirmed)
+  // Jan '26 peak ~$42 (TF Jan 28: "hit highs, stagnant transactions")
+  // Feb–Apr '26 correction (TF: "weak momentum", "contained selling pressure")
+  // May '26 stabilisation (TF May 27: "DDR5 gains narrow", May 20: "DDR5 active, branded demand")
+  // Jun '26 recovery continuing (TF Jun 3: "DDR4/DDR5 extend gains, notable gains";
+  //   Jun 9: "DDR5 momentum continues, inquiries especially brisk";
+  //   Jun 30: "gains narrow, broader market sideways, spot shortages, supply holding firm")
+  // DDR4 ref: Jun 30 $36.00 (+0.28% WoW)
   const dp = [
     2.50, 2.30, 2.10, 2.20, 2.35, 2.50,
     2.70, 3.00, 3.30, 3.60, 3.90, 4.20,
     4.50, 4.80, 5.20, 5.60, 6.20, 6.84,
     13.00, 22.00, 27.20, 42.00,
-    38.00, 32.00, 28.00, 30.00
+    38.00, 32.00, 28.00, 30.00, 33.00
   ];
 
   // TF-BBG spread (%)
+  // Jun: "spot shortages, supply insisting on firm quotes, holding back stock"
+  // → tightness returning slightly, spread stable-to-wider
   const spreadPct = [
     3.5, 3.5, 4.0, 3.5, 3.5, 3.5,
     4.0, 4.5, 4.5, 4.5, 4.0, 4.0,
     4.5, 5.0, 5.5, 5.5, 6.0, 6.5,
     9.0, 11.0, 12.0, 13.0,
-    12.0, 11.0, 9.5, 8.5
+    12.0, 11.0, 9.5, 8.5, 9.0
   ];
-  const bbg = dp.map((p,i) => +(p*(1-spreadPct[i]/100)).toFixed(2));
-  const dpExt = [2.40, ...dp];
+  const bbg=dp.map((p,i)=>+(p*(1-spreadPct[i]/100)).toFixed(2));
+  const dpExt=[2.40,...dp];
 
   const cl=(v,a,b)=>Math.max(a,Math.min(b,v));
   const rd=(v,d)=>+(v.toFixed(d===undefined?2:d));
   const sn=v=>(v>=0?'+':'')+v.toFixed(1);
-  const N=dp.length, L=N-1;
+  const N=dp.length,L=N-1;
 
-  const P_MIN=Math.min(...dp), P_MAX=Math.max(...dp);
-  const P_RNG=P_MAX-P_MIN, P_MID=(P_MIN+P_MAX)/2;
+  const P_MIN=Math.min(...dp),P_MAX=Math.max(...dp);
+  const P_RNG=P_MAX-P_MIN,P_MID=(P_MIN+P_MAX)/2;
 
   const lv=dp.map(p=>rd(cl(-5+10*(p-P_MIN)/P_RNG,-5,5)));
   const mom=dp.map((p,i)=>rd(((p/dpExt[i])-1)*100,1));
@@ -176,41 +183,39 @@ document.addEventListener('DOMContentLoaded', function() {
   document.getElementById('a1v').className='fv '+(lv[L]>=0?'cg':lv[L]>-3?'cy':'cr');
   document.getElementById('a1d').textContent='Score '+sn(lv[L]);
   document.getElementById('a1d').className='fd '+(lv[L]>=0?'bg':lv[L]>-3?'by':'br');
-  document.getElementById('a1s').textContent='2yr range $'+P_MIN.toFixed(2)+'–$'+P_MAX.toFixed(2)+' · zero = $'+P_MID.toFixed(2)+' · recovering from Apr trough';
+  document.getElementById('a1s').textContent='2yr range $'+P_MIN.toFixed(2)+'–$'+P_MAX.toFixed(2)+' · zero = $'+P_MID.toFixed(2)+' · 2nd consecutive month of recovery';
 
   document.getElementById('a2v').textContent=(mom[L]>=0?'+':'')+mom[L].toFixed(1)+'%';
   document.getElementById('a2v').className='fv '+(mom[L]>=0?'cg':'cr');
   document.getElementById('a2d').textContent='Score '+sn(momS[L]);
   document.getElementById('a2d').className='fd '+(momS[L]>=0?'bg':'br');
-  document.getElementById('a2s').textContent='MoM change · momentum flipped positive after 3 months of decline';
+  document.getElementById('a2s').textContent='MoM change · 2nd consecutive positive month · gains narrowing per TrendForce Jun 30';
 
   document.getElementById('a3v').textContent=(acc[L]>=0?'+':'')+acc[L].toFixed(1)+'pp';
   document.getElementById('a3v').className='fv '+(acc[L]>0?'cg':acc[L]>-5?'co':'cr');
   document.getElementById('a3d').textContent='Score '+sn(accS[L]);
   document.getElementById('a3d').className='fd '+(accS[L]>0?'bg':accS[L]>-2?'bo':'br');
-  document.getElementById('a3s').textContent='2nd derivative · sharp swing from −12.5% to +7.1% MoM — correction ending';
+  document.getElementById('a3s').textContent='2nd derivative · momentum still positive but rate of gains slowing — stabilisation phase';
 
   document.getElementById('a4v').textContent=spreadPct[L].toFixed(1)+'%';
   document.getElementById('a4v').className='fv '+(spreadPct[L]>7?'cr':spreadPct[L]>4.5?'co':'cg');
   document.getElementById('a4d').textContent='Score '+sn(spS[L]);
   document.getElementById('a4d').className='fd '+(spS[L]>2?'br':spS[L]>0?'bo':'bg');
-  document.getElementById('a4s').textContent='TF $'+dp[L].toFixed(2)+' vs BBG $'+bbg[L].toFixed(2)+' · narrowing from 13% peak · still above 4.5% baseline';
+  document.getElementById('a4s').textContent='TF $'+dp[L].toFixed(2)+' vs BBG $'+bbg[L].toFixed(2)+' · spot shortages keeping spread elevated · supply holding firm';
 
   // Takeaways
-  const pk=Math.max(...idx),pkI=idx.indexOf(pk);
-  const tr=Math.min(...idx),trI=idx.indexOf(tr);
   document.getElementById('tks').innerHTML=`
     <div class="ti">
       <span class="tb" style="color:var(--g)">▸</span>
-      <span class="tx"><strong>Index snaps back to ${sn(lat)} — momentum flipped positive for the first time since January.</strong> DDR5 spot recovered from $28 (Apr) to $30 (May), a +7.1% MoM move that broke the 3-month declining streak. The acceleration component swung sharply positive as the rate of change reversed from −12.5% to +7.1%. TrendForce confirms buying interest remains concentrated on DDR5 chips, with spot markets stabilising post-correction. Contract prices continue rising but momentum is slowing — the spot-contract gap is beginning to narrow from the bottom.</span>
+      <span class="tx"><strong>Index at ${sn(lat)} — positive and high, but gains narrowing after May's sharp recovery.</strong> DDR5 rose from $30 (May) to $33 (Jun), a +10% MoM move — the 2nd consecutive positive month after the Feb–Apr correction. The regime reads "Positive — Decelerating" because the rate of acceleration has slowed vs. May's snap-back. TrendForce's Jun 30 report confirms: "DDR5 spot price gains narrowed amid sluggish trading" while "spot shortages" persist and "supply insists on firm quotes." The market is transitioning from recovery to consolidation.</span>
     </div>
     <div class="ti">
       <span class="tb" style="color:var(--y)">▸</span>
-      <span class="tx"><strong>The Feb–Apr correction now looks like a destocking event, not a demand inflection.</strong> DDR5 corrected 33% from the $42 peak (Jan) to $28 (Apr), driven by retailers and traders unwinding positions accumulated during the panic-buying phase. TrendForce noted "contained selling pressure" throughout — suppliers held firm on quotes, and original IC-based modules remained stable. The recovery to $30 with narrowing spreads (${spreadPct[L]}%, down from 13%) is consistent with the market finding equilibrium after a parabolic move, not with structural demand weakness.</span>
+      <span class="tx"><strong>The correction is confirmed over — but the new regime is consolidation, not re-acceleration.</strong> DDR5 is building a base in the $28–33 range after the parabolic $42 peak. Contract prices continue rising (Jun 30 update: "driven by tight supply and expectations of negative production growth"). Spot increasingly relies on server demand as consumer/PC momentum weakens. The spot-contract gap is narrowing from the bottom — historically the confirmation that a correction was a cycle pause, not a reversal. DDR4 at $36.00 continues firming, and the DDR4 shortage is now spilling over into DDR3.</span>
     </div>
     <div class="ti">
       <span class="tb" style="color:var(--r)">▸</span>
-      <span class="tx"><strong>The test now: does DDR5 build a base at $28–32 or resume the decline?</strong> If June prints another positive month, the momentum score consolidates and the index stabilises above +3 — confirming the correction is over and the squeeze regime persists at a lower intensity. If price drops back below $28, the May bounce was a dead-cat and the index falls toward zero. The spread at ${spreadPct[L]}% is the confirmation signal: still elevated = allocation still tight. A break below 6% would mean the structural shortage is easing — that hasn't happened.</span>
+      <span class="tx"><strong>Watch for the July read: flat MoM would confirm consolidation, another +10% would signal re-acceleration.</strong> TrendForce's Jul 1 bulletin describes a "sideways market" with "demand dynamics visibly withering" while "supply holds firm." Buyers are reaching their cost tolerance limit, but supply has not loosened. If the spread holds above 8% while price consolidates at $32–34, the squeeze regime persists at lower intensity — the DC capex signal remains positive. A break below $28 or spread collapse below 6% would re-open the inflection question.</span>
     </div>
   `;
 
@@ -218,23 +223,23 @@ document.addEventListener('DOMContentLoaded', function() {
   document.getElementById('cmty').innerHTML=`
     <div class="cl">
       <div class="cn">1</div>
-      <div class="ct"><strong>Price at $30.00 — recovering from the $28 April trough, still 4.4× the Sep '25 level of $6.84.</strong> The $42 → $28 correction (33%) over Feb–Apr is now followed by a $28 → $30 bounce (+7.1%). TrendForce's May 27 report notes "DDR5 spot price gains narrowing amid sluggish trading" — gains are positive but modest. The level score at ${sn(lv[L])} reflects price in the upper portion of the 2yr range. DDR4 at $32.40 has rebounded after earlier declines, confirming the broader DRAM market is stabilising rather than rolling over.</div>
+      <div class="ct"><strong>Price at $33.00 — recovering steadily from the $28 April trough, now 4.8× the Sep '25 level of $6.84.</strong> The correction from $42 (Jan) to $28 (Apr) was −33%, followed by a 2-month recovery to $33 (+18% from trough). TrendForce June reports show "especially brisk inquiries for DDR5" in early June, then "gains narrowing" by month-end. DDR4 at $36.00 is also firming, with the shortage severe enough to push buyers toward DDR3 substitution — a sign the overall DRAM supply constraint is structural, not transient.</div>
     </div>
     <div class="cl">
       <div class="cn">2</div>
-      <div class="ct"><strong>Momentum flipped positive at +7.1% — the first positive month since January:</strong> After three consecutive negative months (−9.5%, −15.8%, −12.5%), the May print broke the declining streak. The momentum score at ${sn(momS[L])} is modestly positive — enough to signal stabilisation but not enough to confirm a renewed squeeze. TrendForce reports "buying interest concentrated on suppliers' DDR5 chips" with procurement supporting price levels even as buyers "grew more cautious about chasing prices higher as suppliers raised their quotes."</div>
+      <div class="ct"><strong>Momentum at +10% MoM — positive for the 2nd month but the pace of gains is decelerating:</strong> May was +7.1% (snap-back from −12.5%), June is +10% (steady recovery). The momentum score at ${sn(momS[L])} is firmly positive. However, the acceleration component reads only ${sn(accS[L])} — positive but declining from May's spike. This is the classic "recovery tapering into consolidation" pattern. TrendForce notes buyers "growing cautious about chasing higher prices as suppliers raised quotes" — procurement continues but urgency is moderating.</div>
     </div>
     <div class="cl">
       <div class="cn">3</div>
-      <div class="ct"><strong>Acceleration at ${sn(accS[L])} — the sharpest positive swing in the window:</strong> The 2nd derivative jumped from the deeply negative Feb–Apr readings as the MoM rate swung from −12.5% to +7.1%, a 19.6pp reversal. This is the acceleration component doing exactly what it's designed to do: catching the inflection point at the bottom of the correction. The same component caught the top in February (acceleration turned negative while price was still rising). Symmetrically, it's now catching the bottom while price is still well below its peak.</div>
+      <div class="ct"><strong>Grey-market spread ticked up to 9.0% from 8.5% — supply-side tightness returning:</strong> TrendForce's late June dailies describe "spot shortages" with "supply side insisting on firm quotes and holding back stock from selling." The widening from 8.5% to 9.0% confirms that the destocking phase is over — inventory released during the Feb–Apr correction has been absorbed, and spot is once again supply-constrained. At $2.97 absolute premium, second-tier DC buyers are still paying meaningful surcharges. The 4.5% calm baseline remains distant.</div>
     </div>
     <div class="cl">
       <div class="cn">4</div>
-      <div class="ct"><strong>Spread at ${spreadPct[L]}% — continued narrowing from the 13% January peak but still structurally elevated:</strong> The TF-BBG premium has declined from $5.46 (Jan, 13% on $42) to $2.55 (May, ${spreadPct[L]}% on $30). In absolute terms the premium has halved, but at 8.5% it remains well above the 4.5% calm-market baseline. Samsung/SK hynix/Micron continue converting DDR4 lines to DDR5 — Micron issued DDR4 EOL notices, Samsung's 8GB LPDDR4 reached end of life. The structural supply constraint on DDR5 server-grade parts persists.</div>
+      <div class="ct"><strong>Contract market increasingly supportive:</strong> TrendForce's Jun 30 contract update states "DRAM contract prices continue to rise, driven by tight supply and expectations of negative production growth." Manufacturers keep raising quotes. "Low inventories and strong replenishment needs have pushed up future price forecasts, while the spot market increasingly relies on server demand." Q2 '26 contract settlements came in at high increases per the May 20 report. The contract floor beneath spot is firm and rising — limiting downside risk for spot prices.</div>
     </div>
     <div class="cl">
       <div class="cn">5</div>
-      <div class="ct"><strong>Cross-reference:</strong> TrendForce's April contract update reports "PC DRAM contract prices rose but momentum slowed" — the contract market is converging toward the spot signal rather than diverging. This narrowing of the spot-contract gap from the bottom is historically the confirmation that a correction was a pause in the cycle, not a reversal. Electrical Equipment Backlog (Indicator #4) and DC Permit velocity (Indicator #3) remain structurally positive. The DRAM index recovering while Queue Reversal (Indicator #1) stays negative is worth monitoring — memory and interconnection are the two most forward-looking signals.</div>
+      <div class="ct"><strong>Cross-reference:</strong> The DRAM index at ${sn(lat)} aligns with Electrical Equipment Backlog (Indicator #4) and DC Permit velocity (Indicator #3) — both structurally positive. The Samsung strike risk (TF Jun 10) and CXMT's Entity List constraints (TF Jul 1) both tighten supply further. Queue Reversal (Indicator #1) remains negative — the forward pipeline of interconnection requests is still weakening. This divergence (tight supply signals vs. weakening forward demand pipeline) is the key structural tension to monitor through Q3.</div>
     </div>
   `;
 
@@ -253,23 +258,18 @@ document.addEventListener('DOMContentLoaded', function() {
 
   const fxT={color:'#4a5568',font:{size:8},maxRotation:0,callback:function(v,i){return i%4===0?this.getLabelForValue(v):''}};
   const fxG={display:false};
-
   new Chart(document.getElementById('k1'),{type:'bar',data:{labels:MO,datasets:[{data:dp,backgroundColor:mom.map(m=>m>=0?'rgba(0,214,143,.4)':'rgba(255,77,106,.5)'),borderColor:mom.map(m=>m>=0?'#00d68f':'#ff4d6a'),borderWidth:1,borderRadius:2}]},options:{responsive:true,maintainAspectRatio:false,animation:false,plugins:{legend:{display:false},tooltip:{enabled:false}},scales:{x:{grid:fxG,ticks:fxT},y:{display:false,beginAtZero:true}}}});
-
   new Chart(document.getElementById('k2'),{type:'bar',data:{labels:MO,datasets:[{data:mom,backgroundColor:mom.map(m=>m>=0?'rgba(0,214,143,.4)':'rgba(255,77,106,.5)'),borderColor:mom.map(m=>m>=0?'#00d68f':'#ff4d6a'),borderWidth:1,borderRadius:2}]},options:{responsive:true,maintainAspectRatio:false,animation:false,plugins:{legend:{display:false},tooltip:{enabled:false}},scales:{x:{grid:fxG,ticks:fxT},y:{display:false}}}});
-
   new Chart(document.getElementById('k3'),{type:'line',data:{labels:MO,datasets:[{data:acc,borderColor:'#ff9a3c',segment:{borderColor:ctx=>ctx.p1.parsed.y>=0?'#00d68f':'#ff4d6a'},backgroundColor:'rgba(255,154,60,.05)',fill:true,tension:.3}]},options:{responsive:true,maintainAspectRatio:false,animation:false,plugins:{legend:{display:false},tooltip:{enabled:false}},scales:{x:{grid:fxG,ticks:fxT},y:{display:false}},elements:{point:{radius:acc.map((_,i)=>i===L?4:0)},line:{borderWidth:2}}}});
-
   new Chart(document.getElementById('k4'),{type:'line',data:{labels:MO,datasets:[{data:spreadPct,borderColor:'#b57bff',backgroundColor:'rgba(181,123,255,.08)',fill:true,tension:.3}]},options:{responsive:true,maintainAspectRatio:false,animation:false,plugins:{legend:{display:false},tooltip:{enabled:false}},scales:{x:{grid:fxG,ticks:fxT},y:{display:false}},elements:{point:{radius:spreadPct.map((_,i)=>i===L?4:0)},line:{borderWidth:2}}}});
 
   document.getElementById('fnEl').innerHTML=
     'Composite = 0.30×Level + 0.30×Momentum + 0.20×Acceleration + 0.20×Spread − same at Apr \'24, capped [−5,+5]. '+
-    'Level: −5+10×(P−$'+P_MIN.toFixed(2)+')/$'+P_RNG.toFixed(2)+'; zero=$'+P_MID.toFixed(2)+'. '+
-    'Momentum: MoM%; 0% neutral; ±10%=±5. Acceleration: MoM_t−MoM_{t−1} (pp); 0pp neutral; ±15pp=±5. '+
-    'Spread: (TF−BBG)/TF%; 4.5% neutral; +4pp above=+5. '+
-    'DDR5 anchors: Sep \'25 $6.84, Dec \'25 $27.20 (Sourceability/TrendForce). May \'26 DDR4 at $32.40 (TF May 5). DDR5 gains narrowing (TF May 27). '+
+    'DDR5 anchors: Sep \'25 $6.84, Dec \'25 $27.20 (Sourceability/TF). DDR4 Jun 30 $36.00 (TF weekly). '+
+    'Jun \'26 TF: "DDR5 momentum continues" (Jun 9); "gains narrow, spot shortages, supply holds firm" (Jun 30). '+
+    'Contract: "prices continue to rise, tight supply, negative production growth expectations" (TF Jun 30). '+
     'Sources: TrendForce DDR5 16Gb 2Gx8 4800MT/s, DRAMeXchange/Bloomberg, Sourceability. '+
-    'Cross-ref: Queue Reversal Monitor, DC Permit & Land, Electrical Equipment Backlog, AI Financing Stress.';
+    'Cross-ref: Queue Reversal, DC Permit & Land, Electrical Equipment Backlog, AI Financing Stress.';
 });
 </script>
 </body>
